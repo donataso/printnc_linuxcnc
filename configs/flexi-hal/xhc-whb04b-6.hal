@@ -4,7 +4,7 @@
 # load pendant components
 # ######################################################################
 
-loadusr -W xhc-whb04b-6 -HsfB
+loadusr -W xhc-whb04b-6 -HsfB #-eu
 
 # ######################################################################
 # pendant signal configuration
@@ -16,12 +16,12 @@ net pdnt.machine.on                       whb.halui.machine.on                  
 net pdnt.machine.off                      whb.halui.machine.off                 halui.machine.off
 
 # program related signals
-net pdnt.program.is-idle                  whb.halui.program.is-idle             halui.program.is-idle
-net pdnt.program.is-paused                whb.halui.program.is-paused           halui.program.is-paused
+net program-is-idle                       whb.halui.program.is-idle             halui.program.is-idle
+net program-is-paused                     whb.halui.program.is-paused           halui.program.is-paused
 net pdnt.program-is-running               whb.halui.program.is-running          halui.program.is-running
-net pdnt.program.resume                   whb.halui.program.resume              halui.program.resume
-net pdnt.program.pause                    whb.halui.program.pause               halui.program.pause
-net pdnt.program.run                      whb.halui.program.run                 halui.program.run
+net pdnt.program.resume                   whb.halui.program.resume              resume_or.in1
+net pdnt.program.pause                    whb.halui.program.pause               pause_or.in1
+net pdnt.program.run                      whb.halui.program.run                 run_or.in1
 net pdnt.program.stop                     whb.halui.program.stop                halui.program.stop
 
 # machine mode related signals
@@ -92,9 +92,9 @@ net  pdnt.mist.is-on                      whb.halui.mist.is-on                  
 net  pdnt.mist.off                        whb.halui.mist.off                    halui.mist.off                   #reserved whb.button.macro-16
 net  pdnt.mist.on                         whb.halui.mist.on                     halui.mist.on                    #reserved whb.button.macro-16
 
-#net  pdnt.lube.is-on                      whb.halui.lube.is-on                  halui.lube.is-on                 #return signal is on or off
-#net  pdnt.lube.off                        whb.halui.lube.off                    halui.lube.off                   #reserved whb.button.macro-2
-#net  pdnt.lube.on                         whb.halui.lube.on                     halui.lube.on                    #reserved whb.button.macro-2
+#net  pdnt.lube.is-on                     whb.halui.lube.is-on                  halui.lube.is-on                 #return signal is on or off
+#net  pdnt.lube.off                       whb.halui.lube.off                    halui.lube.off                   #reserved whb.button.macro-2
+#net  pdnt.lube.on                        whb.halui.lube.on                     halui.lube.on                    #reserved whb.button.macro-2
 
 
 # default function button signals
@@ -124,7 +124,7 @@ net pdnt.button.probe-z                   whb.button.probe-z                    
 
 
 # spindle related signals
-net pdnt.spindle.is-on                    whb.halui.spindle.is-on               spindle.0.on
+net spindle-on                            whb.halui.spindle.is-on               spindle.0.on
 net pdnt.spindle.start                    whb.halui.spindle.start               halui.spindle.0.start
 net pdnt.spindle.stop                     whb.halui.spindle.stop                halui.spindle.0.stop
 net pdnt.spindle.forward                  whb.halui.spindle.forward             halui.spindle.0.forward
