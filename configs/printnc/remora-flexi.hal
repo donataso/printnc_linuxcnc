@@ -1,4 +1,5 @@
 
+
 # load the realtime components
 
 	loadrt [KINS]KINEMATICS
@@ -7,10 +8,13 @@
 	loadrt flexi PRU_base_freq=120000
 	loadrt not names=stepen_not,stepen_z_not
 	loadrt estop_latch names=estop_latch
-	loadrt and2 names=run_and,step_and
+	loadrt and2 names=run_and,step_and,probe_and
 	loadrt or2 names=resume_or,pause_or,run_or
 	loadrt toggle names=hold_button_toggle
 	loadrt toggle2nist names=hold_toggle,paused_toggle
+	loadrt conv_s32_float names=motion_conv
+	loadrt dsmono
+	loadrt comp names=motion_probe_comp
 
 
 net resume_or resume_or.out halui.program.resume
@@ -20,6 +24,9 @@ net run_or run_or.out halui.program.run
 
 # add the remora and motion functions to threads
 
+	addf motion_conv servo-thread
+	addf motion_probe_comp servo-thread
+	addf dsmono.0 servo-thread
 	addf flexi.read servo-thread
 	addf motion-command-handler servo-thread
 	addf motion-controller servo-thread
@@ -30,6 +37,7 @@ net run_or run_or.out halui.program.run
 	addf estop_latch servo-thread
 	addf run_and servo-thread
 	addf step_and servo-thread
+	addf probe_and servo-thread
 	addf hold_toggle servo-thread
 	addf hold_button_toggle servo-thread
 
@@ -156,7 +164,39 @@ net run_or run_or.out halui.program.run
 
 
 # Probe
-	net probe_input motion.probe-input <= flexi.input.PROBE.not
+	# set probe_and.in0 when motion-type == 5
+	net motion-type-convert motion.motion-type motion_conv.in
+	net motion-type-probing motion_conv.out motion_probe_comp.in0
+	setp motion_probe_comp.in1 5 # probing
+	net probing-enable motion_probe_comp.equal probe_and.in0
+
+	# set probe_and.in1 when the probe triggers
+	net probe-enabled flexi.input.PROBE.not probe_and.in1
+
+	# feed probe_and.out to dsmono to get rid of false positives
+	setp dsmono.0.deadtime-ns 100000000
+	net probe-raw-in <= probe_and.out
+	net probe-raw-in => dsmono.0.in
+	net probe_input motion.probe-input <= dsmono.0.out
+
+
+	#loadrt probefilter names=pf1
+	#addf pf1 servo-thread
+
+	#setp pf1.ignorecalls-0 100
+
+	#net probefilter-0-active pf1.active-0
+	#net motion-type motion.motion-type
+	#net motion-type pf1.motion-type-in
+	#net probe-all flexi.input.PROBE.not pf1.probe-in-0
+	#net pf1t5single probe_and.in0
+
+	#loadrt dsmono
+	#setp dsmono.0.deadtime-ns 100000000
+	#addf dsmono.0 servo-thread
+	#net probe-raw-in <= pf1.type5-out-0
+	#net probe-raw-in => dsmono.0.in
+	#net probe_input motion.probe-input <= dsmono.0.out
 
 # Manual toolchange
 

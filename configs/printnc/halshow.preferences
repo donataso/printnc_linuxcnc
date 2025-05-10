@@ -1,27 +1,21 @@
 # Halshow settings
 # This file is generated automatically.
-wm geometry . 1065x651+358+156
+wm geometry . 1065x651+430+48
 placeFrames 0.3
 set ::ratio 0.3
 set ::old_w_leftf 160
 set ::watchlist {
-    pin+qtdragon.spindle-is-at-speed
-    pin+qtdragon.spindle-modbus-connection
-    pin+qtdragon.spindle-modbus-errors
-    pin+spindle.0.at-speed
-    pin+spindle.0.speed-in
-    pin+spindle.0.speed-out
-    sig+spindle-speed-fb
-    pin+flexi.input.Z_LIMIT
-    pin+flexi.input.Z_LIMIT.not
-    pin+flexi.input.X_LIMIT
-    pin+flexi.input.X_LIMIT.not
     pin+flexi.input.PROBE
-    pin+qtversaprobe.enable
-    pin+qtversaprobe.blockheight
-    pin+qtversaprobe.backoffdist
+    pin+motion.motion-type
+    pin+probe_and.in0
+    pin+probe_and.in1
+    pin+probe_and.out
+    pin+motion_probe_comp.in0
+    pin+motion_probe_comp.in1
+    pin+motion_probe_comp.out
+    pin+motion_probe_comp.equal
 }
-set ::workmode settings
+set ::workmode watchhal
 set ::watchInterval 100
 set ::col1_width 100
 set ::ffmts 

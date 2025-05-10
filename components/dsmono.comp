@@ -1,0 +1,43 @@
+//   This is a component for LinuxCNC HAL
+//   Copyright 2023 The LinuxCNC Project
+//
+//   This program is free software; you can redistribute it and/or modify
+//   it under the terms of the GNU General Public License as published by
+//   the Free Software Foundation; either version 2 of the License, or
+//   (at your option) any later version.
+//
+//   This program is distributed in the hope that it will be useful,
+//   but WITHOUT ANY WARRANTY; without even the implied warranty of
+//   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//   GNU General Public License for more details.
+//
+//   You should have received a copy of the GNU General Public License
+//   along with this program; if not, write to the Free Software
+//   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+component dsmono "Double-sided monoflop";
+
+// Credits: This is very loosely based on edge.comp by Jeff Epler
+
+pin in bit in "Input signal";
+pin out bit out "Filtered output signal, tracking 'in' with a deadtime component";
+pin out bit out_invert "Negative of 'out'";
+
+param rw signed deadtime_ns = 0 "Time to be insensitive after an edge on 'in'.";
+param r signed time_left_ns = 0 "Time left in this output pulse";
+
+function _ nofp "Filter input with a deadtime component";
+license "GPL";
+author "ok";
+;;
+
+FUNCTION(_){
+    static char old_in;
+    if (time_left_ns > 0) {
+        time_left_ns -= period;
+    } else if (old_in != in) {
+        time_left_ns = deadtime_ns;
+        old_in = in;
+        out = in;
+        out_invert = !in;
+    }
+}
