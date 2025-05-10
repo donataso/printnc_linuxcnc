@@ -3,12 +3,10 @@
 # Edit axis min/max limits to suit work area
 # Velocities in here in units per second, not per minute.
 
-
 [EMC]
 MACHINE = PrintNC Flexi-HAL
 DEBUG = 0
 VERSION = 1.1
-
 
 [DISPLAY]
 DISPLAY = qtvcp -f qtdragon_hd
@@ -24,7 +22,7 @@ MAX_FEED_OVERRIDE = 2.0
 MIN_SPINDLE_0_OVERRIDE = 0.5
 MAX_SPINDLE_0_OVERRIDE = 2.0
 DEFAULT_SPINDLE_0_SPEED = 6000
-MIN_SPINDLE_0_SPEED = 1500
+MIN_SPINDLE_0_SPEED = 6000
 MAX_SPINDLE_0_SPEED = 24000
 MAX_SPINDLE_POWER = 2400
 DEFAULT_LINEAR_VELOCITY = 50.00
@@ -40,80 +38,60 @@ INCREMENTS = 100mm 10mm 1mm 0.1mm .01mm
 NGCGUI_SUBFILE = slot.ngc
 NGCGUI_SUBFILE = qpocket.ngc
 
-EMBED_TAB_NAME = ATC
-EMBED_TAB_COMMAND = qtvcp /home/expatria/linuxcnc/configs/flexi-hal/qtvcp/rapidchange
-EMBED_TAB_LOCATION = stackedWidget_mainTab
-LOG_FILE = /home/expatria/linuxcnc/configs/flexi-hal/log.log
-
 [PROBE]
 USE_PROBE = versaprobe
 #USE_PROBE = basicprobe
 
-
 [TOOL_CHANGE]
-X = 315
+X = 300
 Y = 0
-Z = 0
-
+Z = -50
 
 [CHANGE_POSITION]
-X = 315
+X = 300
 Y = 0
-Z = 0
-
+Z = -50
 
 [VERSA_TOOLSETTER]
 X = 0
 Y = 0
-Z = 0
-MAXPROBE = 120
-Z_MAX_CLEAR = 0
+Z = -50
+MAXPROBE = 70
+Z_MAX_CLEAR = -50
 DIAMETER = 20
-
 
 [MDI_COMMAND_LIST]
 # Macro buttons, up to 10 available.
 MDI_COMMAND = G0 Z25;X0 Y0;Z0, Goto\nUser\nZero
 MDI_COMMAND = G53 G0 Z0;G53 G0 X0 Y0,Goto\nMachn\nZero
 
-
 [KINS]
 JOINTS = 4
 KINEMATICS = trivkins coordinates=XYZY kinstype=BOTH
-
 
 [FILTER]
 PROGRAM_EXTENSION = .ngc,.nc,.tap G-Code file (*.ngc,*.nc,*.tap)
 PROGRAM_EXTENSION = .py Python Script
 py = python
 
-
 [TASK]
 TASK = milltask
 CYCLE_TIME = 0.010
-
 
 [RS274NGC]
 PARAMETER_FILE = linuxcnc.var
 RS274NGC_STARTUP_CODE = F10 G21 G17 G40 G49 G54 G64 P0.001 G80 G90 G91.1 G92.1 G94 G97 G98
 FEATURES = 30
+SUBROUTINE_PATH = ~/linuxcnc/configs/flexi-hal/subroutines:~/linuxcnc/ngcgui_lib:~/linuxcnc/ngcgui_lib/utilitysubs
 # on abort, this ngc file is called. required for basic/versa probe routines.
 ON_ABORT_COMMAND=O <on_abort> call
 REMAP = M6 modalgroup=6 prolog=change_prolog ngc=qt_auto_probe_tool epilog=change_epilog
-;REMAP = M6 modalgroup=6 prolog=change_prolog ngc=tool_change epilog=change_epilog
 
-NGCGUI_SUBFILE_PATH = ~/linuxcnc/nc_files/examples/ngcgui_lib/
-SUBROUTINE_PATH = \
-~/linuxcnc/nc_files/examples/ngcgui_lib:\
-~/linuxcnc/nc_files/examples/ngcgui_lib/utilitysubs:\
-~/linuxcnc/nc_files/examples/remap-subroutines:\
-~/linuxcnc/nc_files/examples/remap_lib:\
-~/linuxcnc/configs/flexi-hal/macros:\
-~/linuxcnc/configs/flexi-hal/subroutines
 
 [PYTHON]
-PATH_PREPEND = ~/linuxcnc/nc_files/examples/remap_lib/python-stdglue/python
+PATH_APPEND = /usr/share/linuxcnc/ncfiles/remap_lib/python-stdglue/python/
 TOPLEVEL = /usr/share/linuxcnc/ncfiles/remap_lib/python-stdglue/python/toplevel.py
+
 
 [EMCMOT]
 EMCMOT = motmod
@@ -123,15 +101,12 @@ BASE_PERIOD = 0
 SERVO_PERIOD = 1000000
 #SERVO_PERIOD = 500000
 
-
 [HAL]
 TWOPASS = on
 HALFILE = remora-flexi.hal
 HALFILE = xhc-whb04b-6.hal
 POSTGUI_HALFILE = postgui_call_list.hal
 HALUI = halui
-
-POSTGUI_HALFILE = rapidatc-postgui.hal
 
 [HALUI]
 MDI_COMMAND = (DEBUG,<1>)
@@ -150,7 +125,6 @@ MDI_COMMAND = (DEBUG,<12>)
 MDI_COMMAND = (DEBUG,<13>)
 MDI_COMMAND = (DEBUG,<14>)
 
-
 [TRAJ]
 COORDINATES =  XYZY
 LINEAR_UNITS = mm
@@ -161,19 +135,16 @@ MAX_LINEAR_VELOCITY = 10000.00
 NO_FORCE_HOMING = 1
 SPINDLES = 1
 
-
 [EMCIO]
 EMCIO = io
 CYCLE_TIME = 0.100
 TOOL_TABLE = tool.tbl
-
 
 [AXIS_X]
 MAX_VELOCITY = 250.0
 MAX_ACCELERATION = 1500.0
 MIN_LIMIT = -0.01
 MAX_LIMIT = 630.0
-
 
 [JOINT_0]
 TYPE = LINEAR
@@ -196,13 +167,11 @@ HOME_FINAL_VEL = 100
 HOME_USE_INDEX = NO
 HOME_SEQUENCE = -1
 
-
 [AXIS_Y]
 MAX_VELOCITY = 250.0
 MAX_ACCELERATION = 1500.0
 MIN_LIMIT = -0.01
 MAX_LIMIT = 628.0
-
 
 [JOINT_1]
 TYPE = LINEAR
@@ -225,7 +194,6 @@ HOME_FINAL_VEL = -2
 HOME_USE_INDEX = NO
 HOME_SEQUENCE = -1
 
-
 [JOINT_3]
 TYPE = LINEAR
 HOME = 628.0
@@ -247,13 +215,11 @@ HOME_FINAL_VEL = -2
 HOME_USE_INDEX = NO
 HOME_SEQUENCE = -1
 
-
 [AXIS_Z]
 MAX_VELOCITY = 100.0
 MAX_ACCELERATION = 1000.0
 MIN_LIMIT = -165
 MAX_LIMIT = 0
-
 
 [JOINT_2]
 TYPE = LINEAR

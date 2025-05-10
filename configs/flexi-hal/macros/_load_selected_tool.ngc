@@ -1,0 +1,11 @@
+(drop current tool into target pocket)
+o<_load_selected_tool> sub
+G40 ; Compensation off
+G49 ; Cancel Tool Length Compensation
+o100 if[#1 EQ 0]
+    M72 ; Restore modal state
+    (ABORT, Invalid tool selected!)
+o100 endif 
+M61 Q#1
+o<_load_selected_tool> endsub
+M2

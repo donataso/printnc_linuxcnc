@@ -1,6 +1,6 @@
 [DIALOG_GEOMETRY]
 AboutDialog-geometry = half
-LncMessage-geometry = 910 539 321 118
+LncMessage-geometry = 910 539 232 169
 ToolChangeDialog-geometry = 910 539 340 239
 VersaHelpDialog-geometry = 660 254 600 600
 CalculatorDialog-geometry = 910 539 472 376
@@ -25,9 +25,9 @@ RunFromLineDialog_sound_type = READY
 
 [BOOK_KEEPING]
 last_loaded_directory = /home/expatria/Desktop/gcode/atc
-last_loaded_file = /home/expatria/Desktop/gcode/atc/deepen-spring.ngc
+last_loaded_file = /home/expatria/linuxcnc/configs/flexi-hal/macros/_pickup_tool.ngc
 style_QSS_Path = DEFAULT
-RecentPath_0 = /home/expatria/Desktop/gcode/atc/deepen-spring.ngc
+RecentPath_0 = /home/expatria/Desktop/gcode/atc/finish-middle.ngc
 
 [ORIGINOFFSET_SYSTEM_NAMES]
 __dialogOffsetViewWidget-G54 = User System 1
@@ -93,7 +93,7 @@ gcodegraphics-user-lat = 0.0
 gcodegraphics-user-lon = 0.0
 
 [CUSTOM_FORM_ENTRIES]
-Tool to load = 3
+Tool to load = 2
 Laser X = 100.0
 Laser Y = -20.0
 Sensor X = 0.0
@@ -136,10 +136,31 @@ ps_xy_clearance = 5.0
 ps_side_edge_length = 5.0
 ps_probe_height = -79.36
 ps_block_height = -98.08
-use_tool_measurement = False
+use_tool_measurement = True
 ps_offs_x = 0.0
 ps_offs_y = 0.0
 ps_offs_z = 0.0
 ps_offs_angle = 0.0
 ps_probe_rapid_vel = 1000.0
+
+[RAPID_ATC]
+num_pockets = 2
+pocket_offset = 45
+first_pocket_x = 0.425
+first_pocket_y = 73.44
+z_engage = -146.5
+z_engage_drop_offset = 0
+z_ir_engage = -90
+z_safe_clearance = 0
+cover_hal_dpin = 2
+ir_hal_dpin = 3
+x_manual_change_pos = 315
+y_manual_change_pos = 0
+align_axis = Y
+pickup_rate = 1800
+drop_rate = 1500
+spindle_speed_pickup = 1400
+spindle_speed_drop = 1200
+ir_enabled = False
+cover_enabled = False
 

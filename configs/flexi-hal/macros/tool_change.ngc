@@ -1,0 +1,91 @@
+; MIT License
+
+; Copyright 2023 Kenneth Thompson
+
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+o<tool_change> sub
+;M73 ; Save and autorestore model states. This will be used only in case of error, otherwise we will invalidate it.
+
+O100 if [#<_task> EQ 0] ; we must execute this macro only in the milltask interpreter or preview will break, so test for '#<_task>' which is 1 for  the milltask interpreter and 0 in the UI's
+        (print, Task is Null)
+O100     return [999]
+O100 endif
+
+G61 ; Use exact stop mode
+G90 ; Ensure everything that we do is done in absolute coordinates
+G40 ; Cutter comp off, otherwise G53 might go wrong
+G49 ; Cancel tool offset (not needed until the end)
+
+
+#<current_pocket> = #<_hal[rapid_atc.current_tool_pocket]>
+M66 E0 ;L0
+;M66 E0 L0
+;#<actual_pocket> = #5399
+;G4 P30.0 ; pause for a sec
+#<new_pocket> = #<_hal[iocontrol.0.tool-prep-pocket]>  
+(print, current pocket = #<current_pocket>, new_pocket = #<new_pocket>)
+
+o101 if[#<current_pocket> EQ #<new_pocket>]
+    (print, Current pocket is equal to the new pocket, measuing tool then returning..)
+    o<_auto_probe_tool> call [#<tool_in_spindle>] [#<selected_tool>] [#<current_pocket>] [#<new_pocket>]
+    ;M72
+    o101 return [1]
+o101 endif
+
+o102 if [#<current_pocket> EQ 0]
+    (print, No tool currently in spindle, proceeding to pickup.. Current pocket = #<current_pocket> current tool = #<tool_in_spindle>)
+o102 else
+    (print, Tool ID #<tool_in_spindle> presently in spindle, dropping off in pocket #<current_pocket>..)
+    o<_drop_tool> call [#<current_pocket>]
+    o103 if[#<_value> NE 1]
+        ;M72
+        (ABORT, Error.  Drop tool returned with an error #<_value>)
+    o103 else
+        (print, Successfully dropped tool into pocket #<current_pocket>)
+        ; Set the current pocket to 0 since we just dropped the tool
+        M68 E0 Q0 ; Write 0 to analog output 0 to update current_tool_pocket via HAL
+    o103 endif
+o102 endif
+
+o104 if[#<new_pocket> EQ 0 OR #<new_pocket> GT #<_hal[rapid_atc.num_pockets]>]
+    ;M72 ; Restore modal state
+    (ABORT, Pocket number invalid, expected a value between 1 and #<_hal[rapid_atc.num_pockets]>, got #1)
+o104 else
+    (print, Picking up tool ID #<selected_tool> from pocket #<new_pocket>..)
+    o<_pickup_tool> call [#<new_pocket>] [#<selected_tool>]
+    o105 if[#<_value> NE 1]
+        ;M72
+        (ABORT, Error.  Pickup tool returned with an error #<_value>)
+    o105 else
+        (print, Successfully picked up tool #<selected_tool> from pocket #<new_pocket>)
+        ; Update the current pocket to new_pocket since we just picked up a tool
+        M68 E0 Q#<new_pocket> ; Write new_pocket to analog output 0 to update current_tool_pocket via HAL
+        (print, Calling probe routine..)
+        o<_auto_probe_tool> call [#<tool_in_spindle>] [#<selected_tool>] [#<current_pocket>] [#<new_pocket>]
+        o106 if[#<_value> NE 1]
+            ;M72
+            (ABORT, Probing failed! Return code = #<_value>)
+        o106 endif
+    o105 endif
+o104 endif
+
+
+(print, End of Tool Change Program)
+o<tool_change> endsub [1]
+M2

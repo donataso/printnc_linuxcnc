@@ -1,0 +1,122 @@
+; MIT License
+
+; Copyright 2023 Kenneth Thompson
+
+; Permission is hereby granted, free of charge, to any person obtaining a copy
+; of this software and associated documentation files (the "Software"), to deal
+; in the Software without restriction, including without limitation the rights
+; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+; copies of the Software, and to permit persons to whom the Software is
+; furnished to do so, subject to the following conditions:
+
+; The above copyright notice and this permission notice shall be included in all
+; copies or substantial portions of the Software.
+
+; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+; SOFTWARE.
+(drop current tool into target pocket)
+o<_drop_tool> sub
+;M73 ; Save and autorestore model states. This will be used only in case of error, otherwise we will invalidate it.
+o100 if[#<_current_tool> EQ 0]
+    ;M72 ; Restore modal state
+    (print, No tool is currently loaded! Aborting..)
+    o100 return [-1]
+o100 endif
+o101 if[#1 EQ 0 OR #1 GT #<_hal[rapid_atc.num_pockets]>]
+    ;M72 ; Restore modal state
+    (print, Pocket number invalid, expected a value between 1 and #<_hal[rapid_atc.num_pockets]>, got #1)
+    o101 return [-1]
+o101 endif
+(print, mounteds tool = #<_current_tool>)
+(print, Dropping tool into pocket #1)
+#<droppocket>= #1
+;G61 ; Use exact stop mode
+;G90 ; Ensure everything that we do is done in absolute coordinates
+;G40 ; Cutter comp off, otherwise G53 might go wrong
+;G49 ; Cancel tool offset (not needed until the end)
+(print, rapid move to safe Z)
+G53 G0 Z[#<_hal[rapid_atc.safe_z]>] ; First things first, rapid to safe Z
+#<xpos> = 1
+#<ypos> = 1
+o102 if[#<_hal[rapid_atc.align_axis]> EQ 0]
+; align axis is along X
+    (print, pockets arranged along X axis)
+    #<xpos> = [#<_hal[rapid_atc.first_pocket_x]> + [[#<droppocket> - 1] * #<_hal[rapid_atc.pocket_offset]>]]
+    #<ypos> = #<_hal[rapid_atc.first_pocket_y]>
+    (print, xpos = #<xpos>, ypos = #<ypos>)
+o102 else
+; align axis is along Y
+    (print, pockets arranged along Y axis)
+    #<ypos> = [#<_hal[rapid_atc.first_pocket_y]> + [[#<droppocket> - 1] * #<_hal[rapid_atc.pocket_offset]>]]
+    #<xpos> = #<_hal[rapid_atc.first_pocket_x]>
+    (print, xpos = #<xpos>, ypos = #<ypos>)
+o102 endif
+(print, Moving to position: X#<xpos>, Y#<ypos>)
+G90
+G53 G0 X[#<xpos>] Y[#<ypos>]
+;M61 Q0
+(print, Opening dust cover..)
+;M64 P0 ; open dust cover
+o103 if[#<_hal[rapid_atc.cover_enabled]> EQ 1]
+    (print, Opening dust cover..)
+    o<_dust_cover_op> call [1]
+    ;M72
+    ;o103 return [1]
+o103 endif
+G4 P2.0 ; dwell to allow cover to open
+(print, Moving to Z IR engage position..)
+G53 G0 Z[#<_hal[rapid_atc.z_ir_engage]>]
+o104 if[#<_hal[rapid_atc.ir_enabled]> EQ 1]
+    M66 P[#<_hal[rapid_atc.IR_HAL_DPIN]>] L0 ; Check that IR sensor is indicating no tool
+    o909 IF [#5399 EQ 1]
+        (Abort, No tool detected in spindle - Aborting!)
+        0104 return [-1]
+    o909 endif
+o104 endif
+#3 = 0 (assign parameter #3 the value of 0)
+o910 while [#3 LT 2]
+    (print, Rotating spindle CCW)
+    M4 S[#<_hal[rapid_atc.spindle_speed_drop]>] ; Rotate spindle CCW
+    G4 P 2.0 ; dwell for a moment
+    (print, Moving Z to  engage position to dump tool..)
+    G53 G1 Z[#<_hal[rapid_atc.engage_z]> + 2] F[#<_hal[rapid_atc.drop_feed_rate]>] ; dump tool into pocket
+    (print, Moving Z back to IR engage position)
+    G53 G0 Z[#<_hal[rapid_atc.z_ir_engage]>] ; move back to IR engage
+    (print, Stopping spindle)
+    M5 ;stop spindle
+    G4 P2.0 ; dwell for a moment
+    o912 if[#<_hal[rapid_atc.ir_enabled]> EQ 0]
+        #3 = [4] ; indicate IR disabled via parameter
+    o912 endif
+    (print, Checking IR sensor..)
+    M66 P[#<_hal[rapid_atc.IR_HAL_DPIN]>] L0  ; Check that IR sensor is indicating no tool
+    o911 IF [#5399 EQ 0]
+        (print, Timeout! Tool still in spindle! Retry Count = #3)
+        #3 = [#3+1] (increment the test counter)
+    o911 else
+        (print, bit detected)
+        #3 = [3] ; success!
+    o911 endif
+o910 endwhile
+o913 IF [#3 EQ 2]
+    (Abort, Timeout! Tool still in spindle - Aborting!)
+o913 endif
+(print, Succesfully picked up tool from pocket)
+; good!
+(print, Succesfully dumped tool into pocket)
+M61 Q0 ; Clear tool
+(print, Returning to Safe Z Position)
+G53 G0 Z[#<_hal[rapid_atc.safe_z]>] ; Rapid back to Safe Z
+o105 if[#<_hal[rapid_atc.cover_enabled]> EQ 1]
+    (print, Opening dust cover..)
+    o<_dust_cover_op> call [0]
+    ;M72
+    ;o103 return [1]
+o105 endif
+o<_drop_tool> return [1] ; return success
+o<_drop_tool> endsub

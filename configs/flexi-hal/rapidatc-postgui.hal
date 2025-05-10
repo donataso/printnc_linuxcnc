@@ -1,0 +1,10 @@
+
+#net dust-cover motion.digital-out-00 => arduino8266.dust-cover-out
+#net ir-sensor arduino8266IR.ir-sensor-in => motion.digital-in-00
+
+
+loadrt conv_float_s32 names=atc_pocket_conv
+addf atc_pocket_conv servo-thread
+net atc-current-pocket-float motion.analog-out-00 => atc_pocket_conv.in
+net atc-current-pocket-s32 atc_pocket_conv.out => rapid_atc.current_tool_pocket
+

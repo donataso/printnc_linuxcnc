@@ -1,0 +1,19 @@
+(drop current tool into target pocket)
+o<_current_tool_info> sub
+M73 ; Save and autorestore model states. This will be used only in case of error, otherwise we will invalidate it.
+(print, current tool = #<_current_tool>)
+(print, current pocket = #<_current_pocket>)
+(print, selected tool = #<_selected_tool>)
+(print, selected pocket = #<_selected_pocket>)
+o100 if[#<_current_tool> EQ 0]
+    M72 ; Restore modal state
+    (ABORT, No tool is currently loaded!)
+o100 endif 
+(print, Dropping tool into pocket #1)
+o101 if[#1 EQ 0 OR #1 GT #<_hal[rapid_atc.num_pockets]>]
+    M72 ; Restore modal state
+    (ABORT, Pocket number invalid, expected a value between 1 and #<_hal[rapid_atc.num_pockets]>, got #1)
+o101 endif
+(print, mounteds tool = #<_current_tool>)
+G61 ; Use exact stop mode
+o<_current_tool_info> endsub

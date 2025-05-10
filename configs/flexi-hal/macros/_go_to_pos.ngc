@@ -1,0 +1,12 @@
+o<_go_to_pos> sub
+    ; Ensure everything that we do is done in absolute coordinates
+    (print,value of variable safe_z is: #<_hal[rapid_atc.safe_z]>)
+G90
+    ; Cutter comp off, otherwise G53 might go wrong
+G40
+    ; Cancel tool offset (not needed until the end)
+G49
+    ; First things first, rapid to safe Z
+G53 G0 Z[#<_hal[rapid_atc.safe_z]>]
+(print, Moved safe Z)
+o<_go_to_pos> endsub
