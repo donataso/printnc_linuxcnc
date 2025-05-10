@@ -1,6 +1,6 @@
 [DIALOG_GEOMETRY]
 AboutDialog-geometry = half
-LncMessage-geometry = 910 539 232 169
+LncMessage-geometry = 910 539 321 118
 ToolChangeDialog-geometry = 910 539 340 239
 VersaHelpDialog-geometry = 660 254 600 600
 CalculatorDialog-geometry = 910 539 472 376
@@ -25,7 +25,7 @@ RunFromLineDialog_sound_type = READY
 
 [BOOK_KEEPING]
 last_loaded_directory = /home/expatria/Desktop/gcode/atc
-last_loaded_file = /home/expatria/linuxcnc/configs/flexi-hal/macros/_pickup_tool.ngc
+last_loaded_file = /home/expatria/Desktop/gcode/atc/finish-middle.ngc
 style_QSS_Path = DEFAULT
 RecentPath_0 = /home/expatria/Desktop/gcode/atc/finish-middle.ngc
 
@@ -93,17 +93,17 @@ gcodegraphics-user-lat = 0.0
 gcodegraphics-user-lon = 0.0
 
 [CUSTOM_FORM_ENTRIES]
-Tool to load = 2
+Tool to load = 0
 Laser X = 100.0
 Laser Y = -20.0
 Sensor X = 0.0
 Sensor Y = 0.0
 Camera X = 10.0
 Camera Y = 10.0
-Work Height = 45.17
+Work Height = 43.91
 Touch Height = 63.652
 Sensor Height = 63.652
-Search Velocity = 300.0
+Search Velocity = 500.0
 Probe Velocity = 20.0
 Max Probe = 20.0
 Retract Distance = 2.0
@@ -131,12 +131,12 @@ ps_z_clearance = 5.0
 ps_probe_max = 10.0
 ps_probe_max_z_travel = 10.0
 ps_probe_latch = 2.0
-ps_probe_diam = 2.0
+ps_probe_diam = 1.95
 ps_xy_clearance = 5.0
 ps_side_edge_length = 5.0
 ps_probe_height = -79.36
 ps_block_height = -98.08
-use_tool_measurement = True
+use_tool_measurement = False
 ps_offs_x = 0.0
 ps_offs_y = 0.0
 ps_offs_z = 0.0
