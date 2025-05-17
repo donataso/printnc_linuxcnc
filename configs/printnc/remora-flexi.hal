@@ -56,6 +56,7 @@ net run_or run_or.out halui.program.run
 	net spindle-fb-scale-in vfd.spindle-speed-fb => spindle_fb_scale.in
 	net spindle-speed-fb spindle_fb_scale.out => spindle.0.speed-in
 	net spindle-at-speed vfd.spindle-at-speed => spindle.0.at-speed
+	net spindle-at-speed motion.digital-in-00 # rcatc
 	net spindle-forward vfd.spindle-forward => spindle.0.forward
 	net spindle-reverse vfd.spindle-reverse => spindle.0.reverse
 	net spindle-on vfd.spindle-on => spindle.0.on
@@ -179,7 +180,6 @@ net run_or run_or.out halui.program.run
 	net probe-raw-in => dsmono.0.in
 	net probe_input motion.probe-input <= dsmono.0.out
 
-
 	#loadrt probefilter names=pf1
 	#addf pf1 servo-thread
 
@@ -197,19 +197,3 @@ net run_or run_or.out halui.program.run
 	#net probe-raw-in <= pf1.type5-out-0
 	#net probe-raw-in => dsmono.0.in
 	#net probe_input motion.probe-input <= dsmono.0.out
-
-# Manual toolchange
-
-	#These are for axis, uncomment these and remove qtdragon_toolchange from postgui_call_list.hal if using axis GUI.
-	#loadusr -W hal_manualtoolchange
-	#net tool-change iocontrol.0.tool-change => hal_manualtoolchange.change
-	#net tool-changed iocontrol.0.tool-changed <= hal_manualtoolchange.changed
-	#net tool-number iocontrol.0.tool-prep-number => hal_manualtoolchange.number
-	#net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
-
-	#This is forqtdradon_hd, comment out of using axis.
-	net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
-
-
-
-

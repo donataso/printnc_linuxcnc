@@ -3,9 +3,13 @@
 
 # Manual toolchange
 
-	net tool-change      hal_manualtoolchange.change   <=  iocontrol.0.tool-change
-	net tool-changed     hal_manualtoolchange.changed  <=  iocontrol.0.tool-changed
+    net tool-change      hal_manualtoolchange.change   <=  iocontrol.0.tool-change
+	net tool-changed     hal_manualtoolchange.changed  =>  iocontrol.0.tool-changed
+
+    # this is disconnected inside rcatc M6 remap, keeping here as part of the standard setup
 	net tool-prep-number hal_manualtoolchange.number   <=  iocontrol.0.tool-prep-number
+	# not sure if this is standard, recreating it inside rcatc M6 remap just in case
+    net tool-prepare-loopback iocontrol.0.tool-prepare => iocontrol.0.tool-prepared
 
 
 # LED indicators in GUI

@@ -1,7 +1,7 @@
 [DIALOG_GEOMETRY]
 AboutDialog-geometry = half
-LncMessage-geometry = 910 539 321 118
-ToolChangeDialog-geometry = 910 539 340 239
+LncMessage-geometry = 833 507 321 118
+ToolChangeDialog-geometry = 848 579 340 239
 VersaHelpDialog-geometry = 660 254 600 600
 CalculatorDialog-geometry = 910 539 472 376
 _CALCULATOR = 910 539 472 376
@@ -24,8 +24,8 @@ RunFromLineDialog_play_sound = True
 RunFromLineDialog_sound_type = READY
 
 [BOOK_KEEPING]
-last_loaded_directory = /usr/share/linuxcnc/ncfiles/remap-subroutines
-last_loaded_file = /usr/share/linuxcnc/ncfiles/remap-subroutines/qt_auto_probe_tool.ngc
+last_loaded_directory = 
+last_loaded_file = 
 style_QSS_Path = DEFAULT
 RecentPath_0 = /home/expatria/Desktop/gcode/atc/finish-middle.ngc
 
@@ -51,7 +51,7 @@ offset_table-G59.3 = User System 9
 
 [SCREEN_OPTIONS]
 catch_errors = True
-desktop_notify = True
+desktop_notify = False
 notify_max_msgs = 10
 shutdown_check = True
 sound_player_on = False
@@ -93,7 +93,7 @@ gcodegraphics-user-lat = 0.0
 gcodegraphics-user-lon = 0.0
 
 [CUSTOM_FORM_ENTRIES]
-Tool to load = 1
+Tool to load = 0
 Laser X = 100.0
 Laser Y = -20.0
 Sensor X = 0.0
@@ -111,7 +111,7 @@ Z Safe Travel = 20.0
 Eoffset count = 0
 External offsets = False
 Reload program = False
-Reload tool = True
+Reload tool = False
 Use keyboard = True
 Use tool sensor = True
 Use tool touchplate = False

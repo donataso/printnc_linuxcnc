@@ -1,19 +1,28 @@
 # Halshow settings
 # This file is generated automatically.
-wm geometry . 1065x651+430+48
+wm geometry . 1065x651+353+168
 placeFrames 0.3
 set ::ratio 0.3
 set ::old_w_leftf 160
 set ::watchlist {
-    pin+flexi.input.PROBE
-    pin+motion.motion-type
-    pin+probe_and.in0
-    pin+probe_and.in1
-    pin+probe_and.out
-    pin+motion_probe_comp.in0
-    pin+motion_probe_comp.in1
-    pin+motion_probe_comp.out
-    pin+motion_probe_comp.equal
+    pin+hal_manualtoolchange.change
+    pin+hal_manualtoolchange.changed
+    pin+hal_manualtoolchange.number
+    pin+iocontrol.0.tool-change
+    pin+iocontrol.0.tool-changed
+    pin+iocontrol.0.tool-from-pocket
+    pin+iocontrol.0.tool-number
+    pin+iocontrol.0.tool-prep-index
+    pin+iocontrol.0.tool-prep-number
+    pin+iocontrol.0.tool-prep-pocket
+    pin+iocontrol.0.tool-prepare
+    pin+iocontrol.0.tool-prepared
+    pin+qtversaprobe.backoffdist
+    pin+qtversaprobe.blockheight
+    pin+qtversaprobe.enable
+    pin+qtversaprobe.probeheight
+    pin+qtversaprobe.probevel
+    pin+qtversaprobe.searchvel
 }
 set ::workmode watchhal
 set ::watchInterval 100

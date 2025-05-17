@@ -1,4 +1,5 @@
 *.log
 *.pyc
 *.bak
-
+*.var.new
+.idea
