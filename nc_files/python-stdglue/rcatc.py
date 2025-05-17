@@ -557,7 +557,7 @@ def rcatc_tool_change_bug(self):
         yield RcatcConstants.OK
 
     emccanon.CHANGE_TOOL_NUMBER(self.selected_pocket)
-    yield INTERP_EXECUTE_FINISH
+    # yield INTERP_EXECUTE_FINISH
     pose = EmcPose()
     pose.z = -50
     emccanon.USE_TOOL_LENGTH_OFFSET(pose)
