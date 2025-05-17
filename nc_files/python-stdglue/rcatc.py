@@ -482,11 +482,11 @@ class Rcatc:
         emccanon.SET_TOOL_TABLE_ENTRY(tool_number, tool_number, pose, tool.diameter, tool.frontangle, tool.backangle, tool.orientation)
         yield RcatcCanon.queuebuster()
 
-        # commenting this out till the bug is clarified
-        # if use_offset:
-        #     # G43
-        #     emccanon.USE_TOOL_LENGTH_OFFSET(pose)
-        #     yield RcatcCanon.queuebuster()
+        if use_offset:
+            # G43
+            emccanon.USE_TOOL_LENGTH_OFFSET(pose)
+            self.runtime.tool_offset = pose
+            yield RcatcCanon.queuebuster()
 
 
     def handle_probe_error(self):
@@ -551,20 +551,6 @@ class Rcatc:
         hal.connect('iocontrol.0.tool-prepare', 'rcatc-tool-prepare-loopback')
 
 
-# REMAP=M6 modalgroup=6 prolog=change_prolog python=rcatc_tool_change_bug epilog=change_epilog
-def rcatc_tool_change_bug(self):
-    if self.task == 0:  # ignore the preview interpreter
-        yield RcatcConstants.OK
-
-    emccanon.CHANGE_TOOL_NUMBER(self.selected_pocket)
-    # yield INTERP_EXECUTE_FINISH
-    pose = EmcPose()
-    pose.z = -50
-    emccanon.USE_TOOL_LENGTH_OFFSET(pose)
-    yield INTERP_OK
-
-    # after t6 m6, G53 G0 Z0 goes to abs Z-50
-    # G49 followed by G43 fixes the problem
 
 # REMAP=M6 modalgroup=6 prolog=change_prolog python=rcatc_tool_change epilog=change_epilog
 def rcatc_tool_change(self):
@@ -586,6 +572,7 @@ def rcatc_tool_change(self):
         return RcatcConstants.ERROR
 
     return RcatcConstants.OK
+
 
 
 def build_hal(self):
