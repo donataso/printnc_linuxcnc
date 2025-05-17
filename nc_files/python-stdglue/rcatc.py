@@ -13,6 +13,7 @@ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Gen
 You should have received a copy of the GNU General Public License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 """
+from enum import StrEnum
 
 # noinspection PyUnresolvedReferences
 import emccanon
@@ -90,6 +91,14 @@ class RcatcPosition:
 
 class RcatcCanon:
     @staticmethod
+    def reset_coordinates():
+        log.debug('reset_coordinates')
+
+        # emccanon.SET_MOTION_CONTROL_MODE(emccanon.CANON_EXACT_STOP)  # Use exact stop mode
+        emccanon.STOP_CUTTER_RADIUS_COMPENSATION()  # Cutter comp off, otherwise G53 might go wrong
+        emccanon.USE_TOOL_LENGTH_OFFSET(EmcPose())  # Cancel tool offset (not needed until the end)
+
+    @staticmethod
     def feed_z(pos: RcatcPosition, feed: int):
         log.debug('F %d' % feed)
         emccanon.SET_FEED_RATE(feed)
@@ -122,26 +131,33 @@ class RcatcCanon:
 
 class RcatcConfig:
     def __init__(self):
-        self.PICKUP_PLUNGE_COUNT = 2
-        self.PICKUP_Z_RETREAT = 30
         self.SAFE_Z = 0
-        self.Z_IR_ENGAGE = -90
+        self.ENGAGE_Z = -146.5
+
+        self.ALIGN_AXIS = 'Y'
         self.NUM_POCKETS = 2
         self.POCKET_OFFSET = 45
         self.FIRST_POCKET_X = 0.425
         self.FIRST_POCKET_Y = 73.44
-        self.ENGAGE_Z = -146.5
-        self.ALIGN_AXIS = 'Y'
-        self.DROP_RATE = 1500
+
+        self.MANUAL_CHANGE_POS_X = 315
+        self.MANUAL_CHANGE_POS_Y = 0
+
+        self.PICKUP_PLUNGE_COUNT = 2
+        self.PICKUP_Z_RETREAT = 25
+        self.PICKUP_SPINDLE_SPEED = 1400
         self.PICKUP_RATE = 1800
-        self.SPINDLE_SPEED_PICKUP = 1400
-        self.SPINDLE_SPEED_DROP = 1200
-        self.X_MANUAL_CHANGE_POS = 315
-        self.Y_MANUAL_CHANGE_POS = 0
+
+        self.DROP_SPINDLE_SPEED = 1200
+        self.DROP_RATE = 1500
+
         self.IR_ENABLED = False
-        self.COVER_ENABLED = False
-        self.IR_HAL_DPIN = ''
-        self.COVER_HAL_DPIN = ''
+        self.IR_HAL_PIN = ''
+        self.IR_Z_ENGAGE = -90
+
+        self.COVER_ENABLED = True
+        self.COVER_HAL_PIN = 'flexi.output.AUX0'
+        self.COVER_OPEN_TIME = 2
 
     def all(self):
         return {name: getattr(self, name) for name in vars(self) if not name.startswith('__')}
@@ -191,7 +207,7 @@ class Rcatc:
 
         self.original_pos = [self.runtime.origin_offset_x, self.runtime.origin_offset_y]
 
-        self.reset_coordinates()
+        RcatcCanon.reset_coordinates()
 
         current_pocket = self.runtime.current_pocket
         manual_drop = current_pocket > self.config.NUM_POCKETS
@@ -219,9 +235,6 @@ class Rcatc:
         # go back to the original XY position
         RcatcCanon.rapid_safe(RcatcPosition(x=self.original_pos[0], y=self.original_pos[1], z=self.config.SAFE_Z))
         yield RcatcCanon.queuebuster()
-
-        # emccanon.USE_TOOL_LENGTH_OFFSET(self.runtime.tool_offset)
-        # yield RcatcCanon.queuebuster()
 
         yield RcatcConstants.OK
 
@@ -254,7 +267,7 @@ class Rcatc:
             yield RcatcConstants.ERROR
             return
 
-        emccanon.SET_SPINDLE_SPEED(0, self.config.SPINDLE_SPEED_PICKUP)
+        emccanon.SET_SPINDLE_SPEED(0, self.config.PICKUP_SPINDLE_SPEED)
         emccanon.START_SPINDLE_CLOCKWISE(0, 1)
         # wait 2secs for digital-input-00 to go high (linked to spindle.0.at-speed)
         # could as well dwell for 2s to make it simpler
@@ -309,7 +322,7 @@ class Rcatc:
             yield RcatcConstants.ERROR
             return
 
-        emccanon.SET_SPINDLE_SPEED(0, self.config.SPINDLE_SPEED_DROP)
+        emccanon.SET_SPINDLE_SPEED(0, self.config.DROP_SPINDLE_SPEED)
         emccanon.START_SPINDLE_COUNTERCLOCKWISE(0, 1)
         # wait 2secs for digital-input-00 to go high (linked to spindle.0.at-speed)
         # could as well dwell for 2s to make it simpler
@@ -363,7 +376,7 @@ class Rcatc:
             self.runtime.selected_tool = selected_tool
             self.runtime.set_tool_parameters()
 
-        RcatcCanon.rapid_safe(RcatcPosition(x=self.config.X_MANUAL_CHANGE_POS, y=self.config.Y_MANUAL_CHANGE_POS, z=self.config.SAFE_Z))
+        RcatcCanon.rapid_safe(RcatcPosition(x=self.config.MANUAL_CHANGE_POS_X, y=self.config.MANUAL_CHANGE_POS_Y, z=self.config.SAFE_Z))
         yield RcatcCanon.queuebuster()
 
         try:
@@ -469,14 +482,11 @@ class Rcatc:
     def set_tool_z_offset(self, tool_number: int, z_offset: float, use_offset: bool = True):
         self.stat.poll()
 
-        tool = None
-        for t in self.stat.tool_table:
-            if t.id == tool_number:
-                tool = t
-                break
-
         pose = EmcPose()
         pose.z = z_offset
+
+        # current tool is added at zero index in the tool table
+        tool = self.stat.tool_table[0]
 
         # G10 L1 Px Zx
         emccanon.SET_TOOL_TABLE_ENTRY(tool_number, tool_number, pose, tool.diameter, tool.frontangle, tool.backangle, tool.orientation)
@@ -495,10 +505,17 @@ class Rcatc:
         return RcatcConstants.ERROR
 
     def dust_cover_open(self):
-        pass
+        if not self.config.COVER_ENABLED:
+            return
+
+        hal.set_p(self.config.COVER_HAL_PIN, '1')
+        emccanon.DWELL(self.config.COVER_OPEN_TIME)
 
     def dust_cover_close(self):
-        pass
+        if not self.config.COVER_ENABLED:
+            return
+
+        hal.set_p(self.config.COVER_HAL_PIN, '0')
 
     def ir_tool_present(self):
         return False
@@ -517,13 +534,6 @@ class Rcatc:
         self.stat.poll()
         position = self.stat.position
         return {'X': position[0], 'Y': position[1], 'Z': position[2]}
-
-    def reset_coordinates(self):
-        log.debug('reset_coordinates')
-
-        # emccanon.SET_MOTION_CONTROL_MODE(emccanon.CANON_EXACT_STOP)  # Use exact stop mode
-        emccanon.STOP_CUTTER_RADIUS_COMPENSATION()  # Cutter comp off, otherwise G53 might go wrong
-        emccanon.USE_TOOL_LENGTH_OFFSET(EmcPose())  # Cancel tool offset (not needed until the end)
 
     def ok_for_mdi(self):
         self.stat.poll()
