@@ -1,2 +1,2 @@
 from stdglue import *
-from rcatc import *
+from rcatc.remap import *
