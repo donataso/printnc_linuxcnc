@@ -90,6 +90,9 @@ class RcatcPosition:
 
 
 class RcatcCanon:
+    _SPINDLE_DIR_CW = 1
+    _SPINDLE_DIR_CCW = 2
+
     @staticmethod
     def reset_coordinates():
         log.debug('reset_coordinates')
@@ -128,6 +131,48 @@ class RcatcCanon:
         log.debug('G38.2 %s' % [pos.x, pos.y, pos.z])
         emccanon.STRAIGHT_PROBE(1, pos.x, pos.y, pos.z, 0, 0, 0, 0, 0, 0, 229)
 
+    @staticmethod
+    def spindle_cw(rpm: int, wait: int, at_speed_pin: int):
+        yield from RcatcCanon._spindle_start(RcatcCanon._SPINDLE_DIR_CW, rpm, wait, at_speed_pin)
+
+    @staticmethod
+    def spindle_ccw(rpm: int, wait: int, at_speed_pin: int):
+        yield from RcatcCanon._spindle_start(RcatcCanon._SPINDLE_DIR_CCW, rpm, wait, at_speed_pin)
+
+    @staticmethod
+    def _spindle_start(direction: int, rpm: int, wait: int, at_speed_pin: int):
+        emccanon.SET_SPINDLE_SPEED(0, rpm)
+
+        if direction == RcatcCanon._SPINDLE_DIR_CW:
+            emccanon.START_SPINDLE_CLOCKWISE(0, 1)
+        elif direction == RcatcCanon._SPINDLE_DIR_CCW:
+            emccanon.START_SPINDLE_COUNTERCLOCKWISE(0, 1)
+        else:
+            yield RcatcConstants.ERROR
+
+        yield RcatcCanon.queuebuster()
+
+        if at_speed_pin >= 0:
+            # wait 2secs for digital-input-00 to go high (linked to spindle.0.at-speed)
+            emccanon.WAIT(at_speed_pin, 1, 3, 2)
+            yield RcatcCanon.queuebuster()
+
+        if wait:
+            yield from RcatcCanon.dwell(wait)
+
+    @staticmethod
+    def spindle_stop(wait: int):
+        emccanon.STOP_SPINDLE_TURNING(0)
+        yield RcatcCanon.queuebuster()
+
+        if wait:
+            yield from RcatcCanon.dwell(wait)
+
+    @staticmethod
+    def dwell(time: int):
+        emccanon.DWELL(time)
+        yield RcatcCanon.queuebuster()
+
 
 class RcatcConfig:
     def __init__(self):
@@ -150,6 +195,10 @@ class RcatcConfig:
 
         self.DROP_SPINDLE_SPEED = 1200
         self.DROP_RATE = 1500
+
+        self.SPINDLE_AT_SPEED_DIGITAL_IN = -1
+        self.SPINDLE_START_TIME = 1
+        self.SPINDLE_STOP_TIME = 1
 
         self.IR_ENABLED = False
         self.IR_HAL_PIN = ''
@@ -217,20 +266,16 @@ class Rcatc:
 
         if not same_tool:
             if has_tool and not manual_drop:
-                for res in self.drop_tool():
-                    yield res
+                yield from self.drop_tool()
             if manual_drop or manual_pickup:
-                for res in self.manual_change(drop_only=not manual_pickup):
-                    yield res
+                yield from self.manual_change(drop_only=not manual_pickup)
             if not manual_pickup and selected_pocket > 0:
-                for res in self.pickup_tool():
-                    yield res
+                yield from self.pickup_tool()
 
         yield RcatcCanon.queuebuster()
 
         if self.runtime.current_tool:
-            for res in self.probe_tool_length():
-                yield res
+            yield from self.probe_tool_length()
 
         # go back to the original XY position
         RcatcCanon.rapid_safe(RcatcPosition(x=self.original_pos[0], y=self.original_pos[1], z=self.config.SAFE_Z))
@@ -258,8 +303,7 @@ class Rcatc:
         self.dust_cover_open()
         yield RcatcCanon.queuebuster()
 
-        # self.rapid_z(self.config.Z_IR_ENGAGE)
-        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.Z_IR_ENGAGE))
+        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.IR_Z_ENGAGE))
         yield RcatcCanon.queuebuster()
 
         if self.config.IR_ENABLED and self.ir_tool_present():
@@ -267,12 +311,7 @@ class Rcatc:
             yield RcatcConstants.ERROR
             return
 
-        emccanon.SET_SPINDLE_SPEED(0, self.config.PICKUP_SPINDLE_SPEED)
-        emccanon.START_SPINDLE_CLOCKWISE(0, 1)
-        # wait 2secs for digital-input-00 to go high (linked to spindle.0.at-speed)
-        # could as well dwell for 2s to make it simpler
-        emccanon.WAIT(0, 1, 3, 2)
-        yield RcatcCanon.queuebuster()
+        yield from RcatcCanon.spindle_cw(self.config.PICKUP_SPINDLE_SPEED, self.config.SPINDLE_START_TIME, self.config.SPINDLE_AT_SPEED_DIGITAL_IN)
 
         for _ in range(self.config.PICKUP_PLUNGE_COUNT):
             RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z), self.config.PICKUP_RATE)
@@ -280,10 +319,7 @@ class Rcatc:
             RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z + self.config.PICKUP_Z_RETREAT), self.config.PICKUP_RATE)
             yield RcatcCanon.queuebuster()
 
-        emccanon.STOP_SPINDLE_TURNING(0)
-        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.Z_IR_ENGAGE))
-        emccanon.DWELL(1) # dwell to ensure the spindle is stopped
-        yield RcatcCanon.queuebuster()
+        yield from RcatcCanon.spindle_stop(self.config.SPINDLE_STOP_TIME)
 
         if self.config.IR_ENABLED and not self.ir_tool_present():
             self.runtime.set_errormsg('No tool in spindle - Aborting!')
@@ -315,19 +351,14 @@ class Rcatc:
         self.dust_cover_open()
         yield RcatcCanon.queuebuster()
 
-        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.Z_IR_ENGAGE))
+        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.IR_Z_ENGAGE))
 
         if self.config.IR_ENABLED and not self.ir_tool_present():
             self.runtime.set_errormsg('No tool in spindle - Aborting!')
             yield RcatcConstants.ERROR
             return
 
-        emccanon.SET_SPINDLE_SPEED(0, self.config.DROP_SPINDLE_SPEED)
-        emccanon.START_SPINDLE_COUNTERCLOCKWISE(0, 1)
-        # wait 2secs for digital-input-00 to go high (linked to spindle.0.at-speed)
-        # could as well dwell for 2s to make it simpler
-        emccanon.WAIT(0, 1, 3, 2)
-        yield RcatcCanon.queuebuster()
+        yield from RcatcCanon.spindle_ccw(self.config.DROP_SPINDLE_SPEED, self.config.SPINDLE_START_TIME, self.config.SPINDLE_AT_SPEED_DIGITAL_IN)
 
         for _ in range(1): # should I plunge more than once?
             RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z), self.config.DROP_RATE)
@@ -335,11 +366,7 @@ class Rcatc:
             RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z + self.config.PICKUP_Z_RETREAT), self.config.DROP_RATE)
             yield RcatcCanon.queuebuster()
 
-        emccanon.STOP_SPINDLE_TURNING(0)
-        # self.rapid_z(self.config.Z_IR_ENGAGE)
-        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.Z_IR_ENGAGE))
-        emccanon.DWELL(1) # dwell to ensure the spindle is stopped
-        yield RcatcCanon.queuebuster()
+        yield from RcatcCanon.spindle_stop(self.config.SPINDLE_STOP_TIME)
 
         if self.config.IR_ENABLED and self.ir_tool_present():
             self.runtime.set_errormsg('Tool still in spindle - Aborting!')
@@ -475,8 +502,7 @@ class Rcatc:
         z_offset = self.stat.probed_position[2] - versa_probeheight + versa_blockheight
         log.debug('probed position: %s, z offset: %s' % (self.stat.probed_position, z_offset))
 
-        for res in self.set_tool_z_offset(current_tool, z_offset):
-            yield res
+        yield from self.set_tool_z_offset(current_tool, z_offset)
         # yield RcatcCanon.queuebuster()
 
     def set_tool_z_offset(self, tool_number: int, z_offset: float, use_offset: bool = True):
@@ -509,7 +535,7 @@ class Rcatc:
             return
 
         hal.set_p(self.config.COVER_HAL_PIN, '1')
-        emccanon.DWELL(self.config.COVER_OPEN_TIME)
+        yield from RcatcCanon.dwell(self.config.COVER_OPEN_TIME)
 
     def dust_cover_close(self):
         if not self.config.COVER_ENABLED:
@@ -561,7 +587,6 @@ class Rcatc:
         hal.connect('iocontrol.0.tool-prepare', 'rcatc-tool-prepare-loopback')
 
 
-
 # REMAP=M6 modalgroup=6 prolog=change_prolog python=rcatc_tool_change epilog=change_epilog
 def rcatc_tool_change(self):
     if self.task == 0:  # ignore the preview interpreter
@@ -574,15 +599,13 @@ def rcatc_tool_change(self):
     atc.setup_signals()
 
     try:
-        for result in atc.change_tool():
-            yield result
+        yield from atc.change_tool()
     except Exception as e:
         self.runtime.set_errormsg(str(e))
         log.debug(e)
         return RcatcConstants.ERROR
 
     return RcatcConstants.OK
-
 
 
 def build_hal(self):
