@@ -23,9 +23,9 @@
   "spindle_start_time": 1,
   "spindle_stop_time": 1,
 
-  "ir_enabled": false,
-  "ir_hal_pin": "",
-  "ir_z_engage": -90,
+  "ir_enabled": true,
+  "ir_hal_pin": "flexi.input.DOOR",
+  "ir_z_engage": -105,
 
   "cover_enabled": true,
   "cover_hal_pin": "flexi.output.AUX0",

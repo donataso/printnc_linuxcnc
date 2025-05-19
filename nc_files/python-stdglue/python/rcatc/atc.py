@@ -144,6 +144,9 @@ class Rcatc:
 
         yield from Canon.spindle_stop(self.config[ConfigNames.SPINDLE_STOP_TIME])
 
+        Canon.rapid_safe(Position(z=self.config[ConfigNames.IR_Z_ENGAGE]))
+        yield Canon.queuebuster()
+
         if self.config[ConfigNames.IR_ENABLED] and not self.ir_tool_present():
             self.runtime.set_errormsg('No tool in spindle - Aborting!')
             yield Constants.ERROR
@@ -175,6 +178,7 @@ class Rcatc:
         yield Canon.queuebuster()
 
         Canon.rapid_safe(Position(z=self.config[ConfigNames.IR_Z_ENGAGE]))
+        yield Canon.queuebuster()
 
         if self.config[ConfigNames.IR_ENABLED] and not self.ir_tool_present():
             self.runtime.set_errormsg('No tool in spindle - Aborting!')
@@ -190,6 +194,9 @@ class Rcatc:
             yield Canon.queuebuster()
 
         yield from Canon.spindle_stop(self.config[ConfigNames.SPINDLE_STOP_TIME])
+
+        Canon.rapid_safe(Position(z=self.config[ConfigNames.IR_Z_ENGAGE]))
+        yield Canon.queuebuster()
 
         if self.config[ConfigNames.IR_ENABLED] and self.ir_tool_present():
             self.runtime.set_errormsg('Tool still in spindle - Aborting!')
@@ -364,7 +371,10 @@ class Rcatc:
         hal.set_p(self.config[ConfigNames.COVER_HAL_PIN], '0')
 
     def ir_tool_present(self):
-        return False
+        pin_name = self.config[ConfigNames.IR_HAL_PIN]
+        tool_present = int(hal.get_value(pin_name)) == 1
+        log.debug('Tool present: %s' % tool_present)
+        return tool_present
 
     def go_to_pocket(self, pocket: int):
         if self.config[ConfigNames.ALIGN_AXIS].lower() == 'x':
