@@ -13,6 +13,9 @@ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Gen
 You should have received a copy of the GNU General Public License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 """
+import json
+import os.path
+import traceback
 from enum import StrEnum
 
 # noinspection PyUnresolvedReferences
@@ -22,12 +25,11 @@ from interpreter import *
 import hal
 import linuxcnc
 from qtvcp import logger
-from inspect import currentframe, getframeinfo
 
 throw_exceptions = 1
 
 log = logger.getLogger(__name__)
-log.setLevel(logger.DEBUG)
+log.setLevel(logger.WARNING)
 
 
 # noinspection PyUnresolvedReferences
@@ -174,74 +176,98 @@ class RcatcCanon:
         yield RcatcCanon.queuebuster()
 
 
+class RcatcConfigNames(StrEnum):
+    SAFE_Z = 'safe_z'
+    ENGAGE_Z = 'engage_z'
+
+    ALIGN_AXIS = 'align_axis'
+    NUM_POCKETS = 'num_pockets'
+    POCKET_OFFSET = 'pocket_offset'
+    FIRST_POCKET_X = 'first_pocket_x'
+    FIRST_POCKET_Y = 'first_pocket_y'
+
+    MANUAL_CHANGE_POS_X = 'manual_change_pos_x'
+    MANUAL_CHANGE_POS_Y = 'manual_change_pos_y'
+
+    PICKUP_PLUNGE_COUNT = 'pickup_plunge_count'
+    PICKUP_Z_RETREAT = 'pickup_z_retreat'
+    PICKUP_SPINDLE_SPEED = 'pickup_spindle_speed'
+    PICKUP_RATE = 'pickup_rate'
+
+    DROP_SPINDLE_SPEED = 'drop_spindle_speed'
+    DROP_RATE = 'drop_rate'
+
+    # -1 to disable, 0 in case of net spindle-at-speed motion.digital-in-00
+    SPINDLE_AT_SPEED_DIGITAL_IN = 'spindle_at_speed_digital_in'
+    SPINDLE_START_TIME = 'spindle_start_time'
+    SPINDLE_STOP_TIME = 'spindle_stop_time'
+
+    IR_ENABLED = 'ir_enabled'
+    IR_HAL_PIN = 'ir_hal_pin'
+    IR_Z_ENGAGE = 'ir_z_engage'
+
+    COVER_ENABLED = 'cover_enabled'
+    COVER_HAL_PIN = 'cover_hal_pin'
+    COVER_OPEN_TIME = 'cover_open_time'
+
+
 class RcatcConfig:
-    def __init__(self):
-        self.SAFE_Z = 0
-        self.ENGAGE_Z = -146.5
+    def __init__(self, path: str):
+        self._path = os.path.expanduser(path)
+        if not os.path.exists(self._path):
+            raise RuntimeError('RCATC config file not found: "%s"' % self._path)
 
-        self.ALIGN_AXIS = 'Y'
-        self.NUM_POCKETS = 2
-        self.POCKET_OFFSET = 45
-        self.FIRST_POCKET_X = 0.425
-        self.FIRST_POCKET_Y = 73.44
+        self._data = {}
 
-        self.MANUAL_CHANGE_POS_X = 315
-        self.MANUAL_CHANGE_POS_Y = 0
+        self.read()
 
-        self.PICKUP_PLUNGE_COUNT = 2
-        self.PICKUP_Z_RETREAT = 25
-        self.PICKUP_SPINDLE_SPEED = 1400
-        self.PICKUP_RATE = 1800
+    def __getitem__(self, item):
+        if not item in RcatcConfigNames:
+            raise KeyError('Config parameter %s does not exist' % item)
 
-        self.DROP_SPINDLE_SPEED = 1200
-        self.DROP_RATE = 1500
+        if not item in self._data:
+            raise KeyError('Config parameter %s not configured' % item)
 
-        self.SPINDLE_AT_SPEED_DIGITAL_IN = -1
-        self.SPINDLE_START_TIME = 1
-        self.SPINDLE_STOP_TIME = 1
-
-        self.IR_ENABLED = False
-        self.IR_HAL_PIN = ''
-        self.IR_Z_ENGAGE = -90
-
-        self.COVER_ENABLED = True
-        self.COVER_HAL_PIN = 'flexi.output.AUX0'
-        self.COVER_OPEN_TIME = 2
+        return self._data[item]
 
     def all(self):
-        return {name: getattr(self, name) for name in vars(self) if not name.startswith('__')}
+        return self._data
 
     def read(self):
-        names = [name for name in vars(self) if not name.startswith('__')]
-
-        stat = linuxcnc.stat()
-        stat.poll()
-        inifile = linuxcnc.ini(stat.ini_filename)
-
-        for name in names:
-            value: str = inifile.find('RCATC', name) or False
-            # noinspection PySimplifyBooleanCheck
-            if value != False:
-                type_ = type(getattr(self, name))
-                if type_ == bool:
-                    setattr(self, name, value.lower() not in [0, 'false'])
-                else:
-                    setattr(self, name, type_(value))
-
+        with open(self._path) as fp:
+            self._data = json.load(fp)
 
 class Rcatc:
-    def __init__(self, runtime):
-        self.config = RcatcConfig()
-        self.config.read()
+    _DEBUG_LOG = 0x00000001
+    _DEBUG_RELOAD_CONFIG = 0x00000010
 
+    def __init__(self, runtime):
         self.stat = linuxcnc.stat()
 
         self.runtime = runtime
 
         self.original_pos = [self.runtime.origin_offset_x, self.runtime.origin_offset_y]
 
+        self.stat.poll()
+        inifile = linuxcnc.ini(self.stat.ini_filename)
+
+        self.config_path = inifile.find('RCATC', 'CONFIG_PATH') or ''
+        if not self.config_path:
+            raise RuntimeError('RCATC config file not defined')
+        self.config = RcatcConfig(self.config_path)
+        self.config.read()
+
+        debug_flags = int(inifile.find('RCATC', 'DEBUG')) or 0
+        self.reload_config = bool(debug_flags & Rcatc._DEBUG_RELOAD_CONFIG)
+        if debug_flags & Rcatc._DEBUG_LOG:
+            log.setLevel(logger.DEBUG)
+
+
     def change_tool(self):
         log.debug('change_tool')
+
+        if self.reload_config:
+            self.config.read()
 
         if not self.ok_for_mdi():
             self.runtime.set_errormsg("cannot execute commands")
@@ -259,8 +285,8 @@ class Rcatc:
         RcatcCanon.reset_coordinates()
 
         current_pocket = self.runtime.current_pocket
-        manual_drop = current_pocket > self.config.NUM_POCKETS
-        manual_pickup = selected_pocket > 0 and selected_pocket > self.config.NUM_POCKETS
+        manual_drop = current_pocket > self.config[RcatcConfigNames.NUM_POCKETS]
+        manual_pickup = selected_pocket > 0 and selected_pocket > self.config[RcatcConfigNames.NUM_POCKETS]
         has_tool = bool(current_pocket)
         same_tool = selected_pocket == current_pocket
 
@@ -278,7 +304,7 @@ class Rcatc:
             yield from self.probe_tool_length()
 
         # go back to the original XY position
-        RcatcCanon.rapid_safe(RcatcPosition(x=self.original_pos[0], y=self.original_pos[1], z=self.config.SAFE_Z))
+        RcatcCanon.rapid_safe(RcatcPosition(x=self.original_pos[0], y=self.original_pos[1], z=self.config[RcatcConfigNames.SAFE_Z]))
         yield RcatcCanon.queuebuster()
 
         yield RcatcConstants.OK
@@ -294,8 +320,8 @@ class Rcatc:
             yield RcatcConstants.ERROR
             return
 
-        if selected_pocket > self.config.NUM_POCKETS:
-            self.runtime.set_errormsg('Pocket number (%d) higher than ATC pockets number (%d) - Aborting!' % (selected_pocket, self.config.NUM_POCKETS))
+        if selected_pocket > self.config[RcatcConfigNames.NUM_POCKETS]:
+            self.runtime.set_errormsg('Pocket number (%d) higher than ATC pockets number (%d) - Aborting!' % (selected_pocket, self.config[RcatcConfigNames.NUM_POCKETS]))
             yield RcatcConstants.ERROR
             return
 
@@ -303,25 +329,25 @@ class Rcatc:
         self.dust_cover_open()
         yield RcatcCanon.queuebuster()
 
-        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.IR_Z_ENGAGE))
+        RcatcCanon.rapid_safe(RcatcPosition(z=self.config[RcatcConfigNames.IR_Z_ENGAGE]))
         yield RcatcCanon.queuebuster()
 
-        if self.config.IR_ENABLED and self.ir_tool_present():
+        if self.config[RcatcConfigNames.IR_ENABLED] and self.ir_tool_present():
             self.runtime.set_errormsg('Tool still in spindle - Aborting!')
             yield RcatcConstants.ERROR
             return
 
-        yield from RcatcCanon.spindle_cw(self.config.PICKUP_SPINDLE_SPEED, self.config.SPINDLE_START_TIME, self.config.SPINDLE_AT_SPEED_DIGITAL_IN)
+        yield from RcatcCanon.spindle_cw(self.config[RcatcConfigNames.PICKUP_SPINDLE_SPEED], self.config[RcatcConfigNames.SPINDLE_START_TIME], self.config[RcatcConfigNames.SPINDLE_AT_SPEED_DIGITAL_IN])
 
-        for _ in range(self.config.PICKUP_PLUNGE_COUNT):
-            RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z), self.config.PICKUP_RATE)
+        for _ in range(self.config[RcatcConfigNames.PICKUP_PLUNGE_COUNT]):
+            RcatcCanon.feed_z(RcatcPosition(z=self.config[RcatcConfigNames.ENGAGE_Z]), self.config[RcatcConfigNames.PICKUP_RATE])
             yield RcatcCanon.queuebuster()
-            RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z + self.config.PICKUP_Z_RETREAT), self.config.PICKUP_RATE)
+            RcatcCanon.feed_z(RcatcPosition(z=self.config[RcatcConfigNames.ENGAGE_Z] + self.config[RcatcConfigNames.PICKUP_Z_RETREAT]), self.config[RcatcConfigNames.PICKUP_RATE])
             yield RcatcCanon.queuebuster()
 
-        yield from RcatcCanon.spindle_stop(self.config.SPINDLE_STOP_TIME)
+        yield from RcatcCanon.spindle_stop(self.config[RcatcConfigNames.SPINDLE_STOP_TIME])
 
-        if self.config.IR_ENABLED and not self.ir_tool_present():
+        if self.config[RcatcConfigNames.IR_ENABLED] and not self.ir_tool_present():
             self.runtime.set_errormsg('No tool in spindle - Aborting!')
             yield RcatcConstants.ERROR
             return
@@ -342,8 +368,8 @@ class Rcatc:
             yield RcatcConstants.ERROR
             return
 
-        if current_pocket > self.config.NUM_POCKETS:
-            self.runtime.set_errormsg('Pocket number (%d) higher than ATC pockets number (%d) - Aborting!' % (current_pocket, self.config.NUM_POCKETS))
+        if current_pocket > self.config[RcatcConfigNames.NUM_POCKETS]:
+            self.runtime.set_errormsg('Pocket number (%d) higher than ATC pockets number (%d) - Aborting!' % (current_pocket, self.config[RcatcConfigNames.NUM_POCKETS]))
             yield RcatcConstants.ERROR
             return
 
@@ -351,24 +377,24 @@ class Rcatc:
         self.dust_cover_open()
         yield RcatcCanon.queuebuster()
 
-        RcatcCanon.rapid_safe(RcatcPosition(z=self.config.IR_Z_ENGAGE))
+        RcatcCanon.rapid_safe(RcatcPosition(z=self.config[RcatcConfigNames.IR_Z_ENGAGE]))
 
-        if self.config.IR_ENABLED and not self.ir_tool_present():
+        if self.config[RcatcConfigNames.IR_ENABLED] and not self.ir_tool_present():
             self.runtime.set_errormsg('No tool in spindle - Aborting!')
             yield RcatcConstants.ERROR
             return
 
-        yield from RcatcCanon.spindle_ccw(self.config.DROP_SPINDLE_SPEED, self.config.SPINDLE_START_TIME, self.config.SPINDLE_AT_SPEED_DIGITAL_IN)
+        yield from RcatcCanon.spindle_ccw(self.config[RcatcConfigNames.DROP_SPINDLE_SPEED], self.config[RcatcConfigNames.SPINDLE_START_TIME], self.config[RcatcConfigNames.SPINDLE_AT_SPEED_DIGITAL_IN])
 
         for _ in range(1): # should I plunge more than once?
-            RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z), self.config.DROP_RATE)
+            RcatcCanon.feed_z(RcatcPosition(z=self.config[RcatcConfigNames.ENGAGE_Z]), self.config[RcatcConfigNames.DROP_RATE])
             yield RcatcCanon.queuebuster()
-            RcatcCanon.feed_z(RcatcPosition(z=self.config.ENGAGE_Z + self.config.PICKUP_Z_RETREAT), self.config.DROP_RATE)
+            RcatcCanon.feed_z(RcatcPosition(z=self.config[RcatcConfigNames.ENGAGE_Z] + self.config[RcatcConfigNames.PICKUP_Z_RETREAT]), self.config[RcatcConfigNames.DROP_RATE])
             yield RcatcCanon.queuebuster()
 
-        yield from RcatcCanon.spindle_stop(self.config.SPINDLE_STOP_TIME)
+        yield from RcatcCanon.spindle_stop(self.config[RcatcConfigNames.SPINDLE_STOP_TIME])
 
-        if self.config.IR_ENABLED and self.ir_tool_present():
+        if self.config[RcatcConfigNames.IR_ENABLED] and self.ir_tool_present():
             self.runtime.set_errormsg('Tool still in spindle - Aborting!')
             yield RcatcConstants.ERROR
             return
@@ -403,7 +429,7 @@ class Rcatc:
             self.runtime.selected_tool = selected_tool
             self.runtime.set_tool_parameters()
 
-        RcatcCanon.rapid_safe(RcatcPosition(x=self.config.MANUAL_CHANGE_POS_X, y=self.config.MANUAL_CHANGE_POS_Y, z=self.config.SAFE_Z))
+        RcatcCanon.rapid_safe(RcatcPosition(x=self.config[RcatcConfigNames.MANUAL_CHANGE_POS_X], y=self.config[RcatcConfigNames.MANUAL_CHANGE_POS_Y], z=self.config[RcatcConfigNames.SAFE_Z]))
         yield RcatcCanon.queuebuster()
 
         try:
@@ -464,7 +490,7 @@ class Rcatc:
         versa_blockheight = hal.get_value('qtversaprobe.blockheight')
 
         # go to tool setter
-        RcatcCanon.rapid_safe(RcatcPosition(x=versa_x, y=versa_y, z=self.config.SAFE_Z))
+        RcatcCanon.rapid_safe(RcatcPosition(x=versa_x, y=versa_y, z=self.config[RcatcConfigNames.SAFE_Z]))
         yield RcatcCanon.queuebuster()
         RcatcCanon.rapid_safe(RcatcPosition(z=versa_z))
         yield RcatcCanon.queuebuster()
@@ -531,30 +557,30 @@ class Rcatc:
         return RcatcConstants.ERROR
 
     def dust_cover_open(self):
-        if not self.config.COVER_ENABLED:
+        if not self.config[RcatcConfigNames.COVER_ENABLED]:
             return
 
-        hal.set_p(self.config.COVER_HAL_PIN, '1')
-        yield from RcatcCanon.dwell(self.config.COVER_OPEN_TIME)
+        hal.set_p(self.config[RcatcConfigNames.COVER_HAL_PIN], '1')
+        yield from RcatcCanon.dwell(self.config[RcatcConfigNames.COVER_OPEN_TIME])
 
     def dust_cover_close(self):
-        if not self.config.COVER_ENABLED:
+        if not self.config[RcatcConfigNames.COVER_ENABLED]:
             return
 
-        hal.set_p(self.config.COVER_HAL_PIN, '0')
+        hal.set_p(self.config[RcatcConfigNames.COVER_HAL_PIN], '0')
 
     def ir_tool_present(self):
         return False
 
     def go_to_pocket(self, pocket: int):
-        if self.config.ALIGN_AXIS == 'X':
-            x = self.config.FIRST_POCKET_X + (pocket - 1) * self.config.POCKET_OFFSET
-            y = self.config.FIRST_POCKET_Y
+        if self.config[RcatcConfigNames.ALIGN_AXIS].lower() == 'x':
+            x = self.config[RcatcConfigNames.FIRST_POCKET_X] + (pocket - 1) * self.config[RcatcConfigNames.POCKET_OFFSET]
+            y = self.config[RcatcConfigNames.FIRST_POCKET_Y]
         else:
-            x = self.config.FIRST_POCKET_X
-            y = self.config.FIRST_POCKET_Y + (pocket - 1) * self.config.POCKET_OFFSET
+            x = self.config[RcatcConfigNames.FIRST_POCKET_X]
+            y = self.config[RcatcConfigNames.FIRST_POCKET_Y] + (pocket - 1) * self.config[RcatcConfigNames.POCKET_OFFSET]
 
-        RcatcCanon.rapid_safe(RcatcPosition(x=x, y=y, z=self.config.SAFE_Z))
+        RcatcCanon.rapid_safe(RcatcPosition(x=x, y=y, z=self.config[RcatcConfigNames.SAFE_Z]))
 
     def get_machine_position(self):
         self.stat.poll()
@@ -590,10 +616,8 @@ class Rcatc:
 # REMAP=M6 modalgroup=6 prolog=change_prolog python=rcatc_tool_change epilog=change_epilog
 def rcatc_tool_change(self):
     if self.task == 0:  # ignore the preview interpreter
-        return RcatcConstants.OK
-
-    config = RcatcConfig()
-    config.read()
+        yield RcatcConstants.OK
+        return
 
     atc = Rcatc(self)
     atc.setup_signals()
@@ -601,24 +625,21 @@ def rcatc_tool_change(self):
     try:
         yield from atc.change_tool()
     except Exception as e:
+        traceback.print_exc()
         self.runtime.set_errormsg(str(e))
         log.debug(e)
-        return RcatcConstants.ERROR
+        yield RcatcConstants.ERROR
+        return
 
-    return RcatcConstants.OK
+    yield RcatcConstants.OK
 
 
 def build_hal(self):
+    #from inspect import currentframe, getframeinfo
     #log.debug(getframeinfo(currentframe()).lineno)
 
     # emccanon.SET_G5X_OFFSET(int(self.params[5220]), 0, 0, -30, 0,0,0,0,0,0)
     # print(self.tool_offset)
-
-    # stat = linuxcnc.stat()
-    # stat.poll()
-    # print(dir(stat.tool_table[6]))
-    # print(stat.tool_table[6])
-    # print(stat.tool_table[6].zoffset)
 
     comp = hal.component('rcatc')
     log.debug('build_hal')

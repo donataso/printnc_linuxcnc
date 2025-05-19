@@ -1,0 +1,33 @@
+{
+  "safe_z": 0,
+  "engage_z": -146.5,
+
+  "align_axis": "Y",
+  "num_pockets": 2,
+  "pocket_offset": 45,
+  "first_pocket_x": 0.425,
+  "first_pocket_y": 73.44,
+
+  "manual_change_pos_x": 315,
+  "manual_change_pos_y": 0,
+
+  "pickup_plunge_count": 2,
+  "pickup_z_retreat": 25,
+  "pickup_spindle_speed": 1400,
+  "pickup_rate": 1800,
+
+  "drop_spindle_speed": 1200,
+  "drop_rate": 1500,
+
+  "spindle_at_speed_digital_in": 0,
+  "spindle_start_time": 1,
+  "spindle_stop_time": 1,
+
+  "ir_enabled": false,
+  "ir_hal_pin": "",
+  "ir_z_engage": -90,
+
+  "cover_enabled": true,
+  "cover_hal_pin": "flexi.output.AUX0",
+  "cover_open_time": 2
+}
