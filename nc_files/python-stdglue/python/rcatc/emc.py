@@ -61,12 +61,16 @@ class Position:
         if not Env.initialized():
             raise RuntimeError('Env not initialized')
 
-        self._in_x = x
-        self._in_y = y
-        self._in_z = z
-        self._in_a = a
-        self._in_b = c
-        self._in_c = a
+        self.stat = linuxcnc.stat()
+        self.stat.poll()
+        abs_position = self.stat.position
+
+        self._in_x = x if x is not None else abs_position[0]
+        self._in_y = y if y is not None else abs_position[1]
+        self._in_z = z if z is not None else abs_position[2]
+        self._in_a = a if a is not None else abs_position[3]
+        self._in_b = c if b is not None else abs_position[4]
+        self._in_c = a if c is not None else abs_position[5]
 
         self._out_x = None
         self._out_y = None
@@ -75,24 +79,21 @@ class Position:
         self._out_b = None
         self._out_c = None
 
-        self.stat = linuxcnc.stat()
-
     def adjust(self, x: float|None = None, y: float|None = None, z: float|None = None, a: float|None = None, b: float|None = None, c: float|None = None):
         self.stat.poll()
-        abs_position = self.stat.position
 
         if x:
-            self._in_x = (self._in_x if self._in_x is not None else abs_position[0]) + x
+            self._in_x += x
         if y:
-            self._in_y = (self._in_y if self._in_y is not None else abs_position[1]) + y
+            self._in_y += y
         if z:
-            self._in_z = (self._in_z if self._in_z is not None else abs_position[2]) + z
+            self._in_z += z
         if a:
-            self._in_a = (self._in_a if self._in_a is not None else abs_position[3]) + a
+            self._in_a += a
         if b:
-            self._in_b = (self._in_b if self._in_b is not None else abs_position[4]) + b
+            self._in_b += b
         if c:
-            self._in_c = (self._in_c if self._in_c is not None else abs_position[5]) + c
+            self._in_c += c
 
     def _rotate(self, x: float, y: float, theta: float):
         t = math.radians(theta)
@@ -103,8 +104,9 @@ class Position:
         # params names for them are here: https://github.com/LinuxCNC/linuxcnc/blob/1b88677955de70c657dde3961b33ffb87a5dd5d0/src/emc/rs274ngc/interp_find.cc#L467
 
         s = Env.runtime
-
+        self.stat.poll()
         abs_position = self.stat.position
+
         x = self._in_x if self._in_x is not None else abs_position[0]
         y = self._in_y if self._in_y is not None else abs_position[1]
         z = self._in_z if self._in_z is not None else abs_position[2]

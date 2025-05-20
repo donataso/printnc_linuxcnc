@@ -257,6 +257,7 @@ class Rcatc:
     def probe_tool_length(self):
         # G49
         emccanon.USE_TOOL_LENGTH_OFFSET(EmcPose())
+        self.runtime.tool_offset = EmcPose()
 
         yield Canon.queuebuster()
 
@@ -334,7 +335,7 @@ class Rcatc:
         yield from self.set_tool_z_offset(current_tool, z_offset)
         # yield RcatcCanon.queuebuster()
 
-    def set_tool_z_offset(self, tool_number: int, z_offset: float, use_offset: bool = True):
+    def set_tool_z_offset(self, tool_number: int, z_offset: float):
         self.stat.poll()
 
         pose = EmcPose()
@@ -347,11 +348,11 @@ class Rcatc:
         emccanon.SET_TOOL_TABLE_ENTRY(tool_number, tool_number, pose, tool.diameter, tool.frontangle, tool.backangle, tool.orientation)
         yield Canon.queuebuster()
 
-        if use_offset:
-            # G43
-            emccanon.USE_TOOL_LENGTH_OFFSET(pose)
-            self.runtime.tool_offset = pose
-            yield Canon.queuebuster()
+        # G43
+        emccanon.USE_TOOL_LENGTH_OFFSET(pose)
+        yield Canon.queuebuster()
+        self.runtime.tool_offset = pose
+        yield Canon.queuebuster()
 
     def dust_cover_open(self):
         if not self.config[ConfigNames.COVER_ENABLED]:
