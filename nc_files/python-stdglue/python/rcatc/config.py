@@ -21,9 +21,6 @@ from qtvcp import logger
 
 throw_exceptions = 1
 
-log = logger.getLogger(__name__)
-log.setLevel(logger.WARNING)
-
 
 class ConfigNames(StrEnum):
     SAFE_Z = 'safe_z'
@@ -67,7 +64,6 @@ class Config:
             raise RuntimeError('RCATC config file not found: "%s"' % self._path)
 
         self._data = {}
-
         self.read()
 
     def __getitem__(self, item):

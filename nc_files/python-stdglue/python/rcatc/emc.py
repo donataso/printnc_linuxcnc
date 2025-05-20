@@ -13,8 +13,9 @@ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Gen
 You should have received a copy of the GNU General Public License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 """
-import math
 
+from logging import Logger
+import math
 # noinspection PyUnresolvedReferences
 import emccanon
 # noinspection PyUnresolvedReferences
@@ -27,7 +28,7 @@ from qtvcp import logger
 throw_exceptions = 1
 
 log = logger.getLogger(__name__)
-log.setLevel(logger.DEBUG)
+log.setLevel(logger.WARNING)
 
 
 class Env:
@@ -36,6 +37,12 @@ class Env:
     @staticmethod
     def set_runtime(runtime: Interp):
         Env.runtime = runtime
+
+    @staticmethod
+    def set_logger(log_: Logger):
+        # ugly, but I'm not willing to fix this right now
+        global log
+        log = log_
 
     @staticmethod
     def initialized():

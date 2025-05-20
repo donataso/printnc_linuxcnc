@@ -41,8 +41,6 @@ class Rcatc:
 
         self.runtime = runtime
 
-        self.original_pos = [self.runtime.origin_offset_x, self.runtime.origin_offset_y]
-
         self.stat.poll()
         inifile = linuxcnc.ini(self.stat.ini_filename)
 
@@ -58,7 +56,7 @@ class Rcatc:
             log.setLevel(logger.DEBUG)
 
         EmcEnv.set_runtime(runtime)
-
+        EmcEnv.set_logger(log)
 
     def change_tool(self):
         log.debug('change_tool')
@@ -77,7 +75,7 @@ class Rcatc:
             yield Constants.ERROR
             return
 
-        self.original_pos = [self.runtime.origin_offset_x, self.runtime.origin_offset_y]
+        original_pos = Position(z=self.config[ConfigNames.SAFE_Z])
 
         current_pocket = self.runtime.current_pocket
         manual_drop = current_pocket > self.config[ConfigNames.NUM_POCKETS]
@@ -99,7 +97,7 @@ class Rcatc:
             yield from self.probe_tool_length()
 
         # go back to the original XY position
-        Canon.rapid_safe(Position(x=self.original_pos[0], y=self.original_pos[1], z=self.config[ConfigNames.SAFE_Z]))
+        Canon.rapid_safe(original_pos)
         yield Canon.queuebuster()
 
         yield Constants.OK
