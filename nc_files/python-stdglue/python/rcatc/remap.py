@@ -48,21 +48,3 @@ def rcatc_tool_change(self):
         return
 
     yield Constants.OK
-
-
-# def build_hal(self):
-#     #from inspect import currentframe, getframeinfo
-#     #log.debug(getframeinfo(currentframe()).lineno)
-#
-#     # emccanon.SET_G5X_OFFSET(int(self.params[5220]), 0, 0, -30, 0,0,0,0,0,0)
-#     # print(self.tool_offset)
-#
-#     import hal
-#     comp = hal.component('rcatc')
-#     log.debug('build_hal')
-#
-#     comp.newpin("use-atc", hal.HAL_BIT, hal.HAL_IN)
-#     comp.newpin("use-atc-asdf", hal.HAL_BIT, hal.HAL_IN)
-#     hal.set_p('rcatc.use-atc', 'True')
-#
-#     comp.ready()

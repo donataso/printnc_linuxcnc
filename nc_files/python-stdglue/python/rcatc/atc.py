@@ -29,7 +29,7 @@ from .emc import Env as EmcEnv, Constants, Position, Canon
 throw_exceptions = 1
 
 log = logger.getLogger(__name__)
-log.setLevel(logger.WARNING)
+log.setLevel(logger.DEBUG)
 
 
 class Rcatc:
@@ -78,8 +78,6 @@ class Rcatc:
             return
 
         self.original_pos = [self.runtime.origin_offset_x, self.runtime.origin_offset_y]
-
-        Canon.reset_coordinates()
 
         current_pocket = self.runtime.current_pocket
         manual_drop = current_pocket > self.config[ConfigNames.NUM_POCKETS]
@@ -342,7 +340,7 @@ class Rcatc:
         self.stat.poll()
 
         pose = EmcPose()
-        pose.abs_z = z_offset
+        pose.z = z_offset
 
         # current tool is added at zero index in the tool table
         tool = self.stat.tool_table[0]
