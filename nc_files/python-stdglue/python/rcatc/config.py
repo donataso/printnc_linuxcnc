@@ -24,8 +24,6 @@ throw_exceptions = 1
 log = logger.getLogger(__name__)
 log.setLevel(logger.WARNING)
 
-__all__ = ['ConfigNames', 'Config']
-
 
 class ConfigNames(StrEnum):
     SAFE_Z = 'safe_z'

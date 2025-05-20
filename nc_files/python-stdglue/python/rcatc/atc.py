@@ -23,15 +23,13 @@ from interpreter import EmcPose
 import hal
 import linuxcnc
 from qtvcp import logger
-from .config import *
-from .emc import *
+from .config import Config, ConfigNames
+from .emc import Env as EmcEnv, Constants, Position, Canon
 
 throw_exceptions = 1
 
 log = logger.getLogger(__name__)
 log.setLevel(logger.WARNING)
-
-__all__ = ['Rcatc']
 
 
 class Rcatc:
@@ -58,6 +56,8 @@ class Rcatc:
         self.reload_config = bool(debug_flags & Rcatc._DEBUG_RELOAD_CONFIG)
         if debug_flags & Rcatc._DEBUG_LOG:
             log.setLevel(logger.DEBUG)
+
+        EmcEnv.set_runtime(runtime)
 
 
     def change_tool(self):
@@ -342,7 +342,7 @@ class Rcatc:
         self.stat.poll()
 
         pose = EmcPose()
-        pose.z = z_offset
+        pose.abs_z = z_offset
 
         # current tool is added at zero index in the tool table
         tool = self.stat.tool_table[0]

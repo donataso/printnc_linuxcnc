@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License along with thi
 import traceback
 # noinspection PyUnresolvedReferences
 from interpreter import *
-from .atc import *
+from .atc import Rcatc
 from .emc import Constants
 from qtvcp import logger
 

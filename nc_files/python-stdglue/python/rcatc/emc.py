@@ -18,6 +18,8 @@ You should have received a copy of the GNU General Public License along with thi
 import emccanon
 # noinspection PyUnresolvedReferences
 from interpreter import *
+# noinspection PyUnresolvedReferences
+import interpreter
 import linuxcnc
 from qtvcp import logger
 
@@ -26,7 +28,17 @@ throw_exceptions = 1
 log = logger.getLogger(__name__)
 log.setLevel(logger.WARNING)
 
-__all__ = ['Canon', 'Constants', 'Position']
+
+class Env:
+    runtime: Interp
+
+    @staticmethod
+    def set_runtime(runtime: Interp):
+        Env.runtime = runtime
+
+    @staticmethod
+    def initialized():
+        return isinstance(Env.runtime, Interp)
 
 
 # noinspection PyUnresolvedReferences
@@ -38,9 +50,16 @@ class Constants:
 
 class Position:
     def __init__(self, x: float|None = None, y: float|None = None, z: float|None = None):
-        self.in_x = x
-        self.in_y = y
-        self.in_z = z
+        if not Env.initialized():
+            raise RuntimeError('Env not initialized')
+
+        self._in_x = x
+        self._in_y = y
+        self._in_z = z
+
+        self._out_x = None
+        self._out_y = None
+        self._out_z = None
 
         self.stat = linuxcnc.stat()
 
@@ -48,44 +67,48 @@ class Position:
         self.stat.poll()
         abs_position = self.stat.position
         if x:
-            self.in_x = (self.in_x if self.in_x is not None else abs_position[0]) + x
+            self._in_x = (self._in_x if self._in_x is not None else abs_position[0]) + x
         if y:
-            self.in_y = (self.in_y if self.in_y is not None else abs_position[1]) + y
+            self._in_y = (self._in_y if self._in_y is not None else abs_position[1]) + y
         if z:
-            self.in_z = (self.in_z if self.in_z is not None else abs_position[2]) + z
+            self._in_z = (self._in_z if self._in_z is not None else abs_position[2]) + z
 
-    @property
-    def x(self):
+    def _recalculate(self):
         self.stat.poll()
         abs_position = self.stat.position
-        return (self.in_x if self.in_x is not None else abs_position[0]) - (abs_position[0] - self.curr_x)
+        self._out_x = (self._in_x if self._in_x is not None else abs_position[0]) - (abs_position[0] - self.wcs_x)
+        self._out_y = (self._in_y if self._in_y is not None else abs_position[1]) - (abs_position[1] - self.wcs_y)
+        self._out_z = (self._in_z if self._in_z is not None else abs_position[2]) - (abs_position[2] - self.wcs_z)
 
     @property
-    def y(self):
-        self.stat.poll()
-        abs_position = self.stat.position
-        return (self.in_y if self.in_y is not None else abs_position[1]) - (abs_position[1] - self.curr_y)
+    def abs_x(self):
+        self._recalculate()
+        return self._out_x
 
     @property
-    def z(self):
-        self.stat.poll()
-        abs_position = self.stat.position
-        return (self.in_z if self.in_z is not None else abs_position[2]) - (abs_position[2] - self.curr_z)
+    def abs_y(self):
+        self._recalculate()
+        return self._out_y
 
     @property
-    def curr_x(self):
+    def abs_z(self):
+        self._recalculate()
+        return self._out_z
+
+    @property
+    def wcs_x(self):
         return emccanon.GET_EXTERNAL_POSITION_X()
 
     @property
-    def curr_y(self):
+    def wcs_y(self):
         return emccanon.GET_EXTERNAL_POSITION_Y()
 
     @property
-    def curr_z(self):
+    def wcs_z(self):
         return emccanon.GET_EXTERNAL_POSITION_Z()
 
     def __str__(self):
-        return str([self.x, self.y, self.z])
+        return str([self.abs_x, self.abs_y, self.abs_z])
 
 
 class Canon:
@@ -104,15 +127,15 @@ class Canon:
     def feed_z(pos: Position, feed: int):
         log.debug('F %d' % feed)
         emccanon.SET_FEED_RATE(feed)
-        log.debug('G1 %s at F%d' % ([pos.curr_x, pos.curr_y, pos.z], feed))
-        emccanon.STRAIGHT_FEED(2, pos.curr_x, pos.curr_y, pos.z, 0, 0, 0, 0, 0, 0)
+        log.debug('G1 %s at F%d' % ([pos.wcs_x, pos.wcs_y, pos.abs_z], feed))
+        emccanon.STRAIGHT_FEED(2, pos.wcs_x, pos.wcs_y, pos.abs_z, 0, 0, 0, 0, 0, 0)
 
     @staticmethod
     def rapid_safe(pos: Position):
-        log.debug('G0 %s' % [pos.curr_x, pos.curr_y, pos.z])
-        emccanon.STRAIGHT_TRAVERSE(1, pos.curr_x, pos.curr_y, pos.z, 0, 0, 0, 0, 0, 0)
-        log.debug('G0 %s' % [pos.x, pos.y, pos.z])
-        emccanon.STRAIGHT_TRAVERSE(2, pos.x, pos.y, pos.z, 0, 0, 0, 0, 0, 0)
+        log.debug('G0 %s' % [pos.wcs_x, pos.wcs_y, pos.abs_z])
+        emccanon.STRAIGHT_TRAVERSE(1, pos.wcs_x, pos.wcs_y, pos.abs_z, 0, 0, 0, 0, 0, 0)
+        log.debug('G0 %s' % [pos.abs_x, pos.abs_y, pos.abs_z])
+        emccanon.STRAIGHT_TRAVERSE(2, pos.abs_x, pos.abs_y, pos.abs_z, 0, 0, 0, 0, 0, 0)
 
     @staticmethod
     def queuebuster():
@@ -127,8 +150,8 @@ class Canon:
 
         log.debug('F %d' % feed)
         emccanon.SET_FEED_RATE(feed)
-        log.debug('G38.2 %s' % [pos.x, pos.y, pos.z])
-        emccanon.STRAIGHT_PROBE(1, pos.x, pos.y, pos.z, 0, 0, 0, 0, 0, 0, 229)
+        log.debug('G38.2 %s' % [pos.abs_x, pos.abs_y, pos.abs_z])
+        emccanon.STRAIGHT_PROBE(1, pos.abs_x, pos.abs_y, pos.abs_z, 0, 0, 0, 0, 0, 0, 229)
 
     @staticmethod
     def spindle_cw(rpm: int, wait: int, at_speed_pin: int):
