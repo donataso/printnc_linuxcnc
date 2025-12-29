@@ -128,7 +128,7 @@ net pdnt.button.probe-z                   whb.button.probe-z                    
 
 
 # spindle related signals
-net pdnt.spindle.is-on                    whb.halui.spindle.is-on               spindle.0.on
+net spindle-on                            whb.halui.spindle.is-on               spindle.0.on
 net pdnt.spindle.start                    whb.halui.spindle.start               halui.spindle.0.start
 net pdnt.spindle.stop                     whb.halui.spindle.stop                halui.spindle.0.stop
 net pdnt.spindle.forward                  whb.halui.spindle.forward             halui.spindle.0.forward

@@ -17,21 +17,12 @@ set ::watchlist {
     pin+iocontrol.0.tool-prep-pocket
     pin+iocontrol.0.tool-prepare
     pin+iocontrol.0.tool-prepared
-    pin+qtversaprobe.backoffdist
-    pin+qtversaprobe.blockheight
-    pin+qtversaprobe.enable
-    pin+qtversaprobe.probeheight
-    pin+qtversaprobe.probevel
-    pin+qtversaprobe.searchvel
     pin+flexi.input.DOOR
     pin+flexi.input.DOOR.not
-    pin+air_or.in0
-    pin+air_or.in1
-    pin+air_or.out
-    pin+iocontrol.0.coolant-flood
-    pin+iocontrol.0.coolant-mist
     pin+flexi.output.COOLANT
     pin+flexi.output.MIST
+    pin+flexi.input.FEED_HOLD
+    pin+flexi.input.FEED_HOLD.not
 }
 set ::workmode watchhal
 set ::watchInterval 100
