@@ -79,6 +79,25 @@ class Position:
         self._out_b = None
         self._out_c = None
 
+    def copy(self):
+        return Position(self._in_x, self._in_y, self._in_z, self._in_a, self._in_b, self._in_c)
+
+    def set(self, x: float|None = None, y: float|None = None, z: float|None = None, a: float|None = None, b: float|None = None, c: float|None = None):
+        self.stat.poll()
+
+        if x:
+            self._in_x = x
+        if y:
+            self._in_y = y
+        if z:
+            self._in_z = z
+        if a:
+            self._in_a = a
+        if b:
+            self._in_b = b
+        if c:
+            self._in_c = c
+
     def adjust(self, x: float|None = None, y: float|None = None, z: float|None = None, a: float|None = None, b: float|None = None, c: float|None = None):
         self.stat.poll()
 

@@ -24,10 +24,10 @@ RunFromLineDialog_play_sound = True
 RunFromLineDialog_sound_type = READY
 
 [BOOK_KEEPING]
-last_loaded_directory = 
-last_loaded_file = 
+last_loaded_directory = /home/expatria/Desktop/gcode/atc
+last_loaded_file = /home/expatria/Desktop/gcode/atc/nut_cut.ngc
 style_QSS_Path = DEFAULT
-RecentPath_0 = /home/expatria/Desktop/gcode/atc/finish-middle.ngc
+RecentPath_0 = /home/expatria/Desktop/gcode/atc/nut_cut.ngc
 
 [ORIGINOFFSET_SYSTEM_NAMES]
 __dialogOffsetViewWidget-G54 = User System 1
@@ -96,17 +96,17 @@ gcodegraphics-user-lon = 0.0
 Tool to load = 0
 Laser X = 100.0
 Laser Y = -20.0
-Sensor X = 0.0
-Sensor Y = 0.0
+Sensor X = 12.0
+Sensor Y = 550.0
 Camera X = 10.0
 Camera Y = 10.0
-Work Height = 43.91
+Work Height = 112.18
 Touch Height = 63.652
 Sensor Height = 63.652
 Search Velocity = 500.0
-Probe Velocity = 20.0
+Probe Velocity = 30.0
 Max Probe = 20.0
-Retract Distance = 2.0
+Retract Distance = 1.0
 Z Safe Travel = 20.0
 Eoffset count = 0
 External offsets = False
@@ -128,20 +128,22 @@ Camview cam number = 0
 ps_searchvel = 300.0
 ps_probevel = 20.0
 ps_z_clearance = 5.0
-ps_probe_max = 10.0
-ps_probe_max_z_travel = 10.0
-ps_probe_latch = 2.0
+ps_probe_max = 15.0
+ps_probe_max_z_travel = 11.0
+ps_probe_latch = 1.0
 ps_probe_diam = 1.95
-ps_xy_clearance = 5.0
-ps_side_edge_length = 5.0
-ps_probe_height = -79.36
-ps_block_height = -98.08
+ps_xy_clearance = 10.0
+ps_side_edge_length = 15.0
+ps_probe_height = -72.025
+ps_block_height = -77.195
 use_tool_measurement = False
 ps_offs_x = 0.0
 ps_offs_y = 0.0
 ps_offs_z = 0.0
 ps_offs_angle = 0.0
 ps_probe_rapid_vel = 1000.0
+use_auto_zero = True
+use_auto_skew = False
 
 [RAPID_ATC]
 num_pockets = 2

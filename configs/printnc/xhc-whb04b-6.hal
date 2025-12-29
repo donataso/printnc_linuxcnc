@@ -19,9 +19,13 @@ net pdnt.machine.off                      whb.halui.machine.off                 
 net program-is-idle                       whb.halui.program.is-idle             halui.program.is-idle
 net program-is-paused                     whb.halui.program.is-paused           halui.program.is-paused
 net pdnt.program-is-running               whb.halui.program.is-running          halui.program.is-running
-net pdnt.program.resume                   whb.halui.program.resume              resume_or.in1
-net pdnt.program.pause                    whb.halui.program.pause               pause_or.in1
-net pdnt.program.run                      whb.halui.program.run                 run_or.in1
+
+net pdnt.program.resume                   whb.halui.program.resume              halui.program.resume
+net pdnt.program.pause                    whb.halui.program.pause               halui.program.pause
+net pdnt.program.run                      whb.halui.program.run                 halui.program.run
+#net pdnt.program.resume                   whb.halui.program.resume              resume_or.in1
+#net pdnt.program.pause                    whb.halui.program.pause               pause_or.in1
+#net pdnt.program.run                      whb.halui.program.run                 run_or.in1
 net pdnt.program.stop                     whb.halui.program.stop                halui.program.stop
 
 # machine mode related signals
@@ -124,7 +128,7 @@ net pdnt.button.probe-z                   whb.button.probe-z                    
 
 
 # spindle related signals
-net spindle-on                            whb.halui.spindle.is-on               spindle.0.on
+net pdnt.spindle.is-on                    whb.halui.spindle.is-on               spindle.0.on
 net pdnt.spindle.start                    whb.halui.spindle.start               halui.spindle.0.start
 net pdnt.spindle.stop                     whb.halui.spindle.stop                halui.spindle.0.stop
 net pdnt.spindle.forward                  whb.halui.spindle.forward             halui.spindle.0.forward

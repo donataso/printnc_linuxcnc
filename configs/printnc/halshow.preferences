@@ -1,6 +1,6 @@
 # Halshow settings
 # This file is generated automatically.
-wm geometry . 1065x651+353+168
+wm geometry . 1119x688+353+168
 placeFrames 0.3
 set ::ratio 0.3
 set ::old_w_leftf 160
@@ -23,6 +23,15 @@ set ::watchlist {
     pin+qtversaprobe.probeheight
     pin+qtversaprobe.probevel
     pin+qtversaprobe.searchvel
+    pin+flexi.input.DOOR
+    pin+flexi.input.DOOR.not
+    pin+air_or.in0
+    pin+air_or.in1
+    pin+air_or.out
+    pin+iocontrol.0.coolant-flood
+    pin+iocontrol.0.coolant-mist
+    pin+flexi.output.COOLANT
+    pin+flexi.output.MIST
 }
 set ::workmode watchhal
 set ::watchInterval 100

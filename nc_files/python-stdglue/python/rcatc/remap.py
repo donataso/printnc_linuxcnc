@@ -35,6 +35,12 @@ def rcatc_tool_change(self):
         yield Constants.OK
         return
 
+    # log.warn('a')
+    # print(self.parameters[5203 + 20])
+    # log.warn('b')
+    # print(self.params[5203 + 20])
+    # log.warn('c')
+    # yield Constants.OK
     try:
         atc = Rcatc(self)
         atc.setup_signals()
@@ -43,7 +49,7 @@ def rcatc_tool_change(self):
     except Exception as e:
         traceback.print_exc()
         self.runtime.set_errormsg(str(e))
-        log.debug(e)
+        log.error(e)
         yield Constants.ERROR
         return
 

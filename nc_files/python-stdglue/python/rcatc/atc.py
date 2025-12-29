@@ -13,6 +13,7 @@ warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Gen
 You should have received a copy of the GNU General Public License along with this program. If not, see
 <https://www.gnu.org/licenses/>.
 """
+import copy
 
 # noinspection PyUnresolvedReferences
 import emccanon
@@ -64,10 +65,10 @@ class Rcatc:
         if self.reload_config:
             self.config.read()
 
-        if not self.ok_for_mdi():
-            self.runtime.set_errormsg("cannot execute commands")
-            yield Constants.ERROR
-            return
+        #if not self.ok_for_mdi():
+        #    self.runtime.set_errormsg("cannot execute commands")
+        #    yield Constants.ERROR
+        #    return
 
         selected_pocket = self.runtime.selected_pocket
         if selected_pocket == -1:
@@ -282,7 +283,7 @@ class Rcatc:
         versa_x = float(versa_x)
         versa_y = float(versa_y)
         versa_z = float(versa_z)
-        versa_maxprobe = float(versa_maxprobe)
+        versa_maxprobe = 120.0 # float(versa_maxprobe)
 
         versa_searchvel = hal.get_value('qtversaprobe.searchvel')
         versa_probevel = hal.get_value('qtversaprobe.probevel')
@@ -326,14 +327,36 @@ class Rcatc:
             yield Constants.ERROR
             return
 
-        # go back up
-        Canon.rapid_safe(Position(z=versa_z))
 
         z_offset = self.stat.probed_position[2] - versa_probeheight + versa_blockheight
         log.debug('probed position: %s, z offset: %s' % (self.stat.probed_position, z_offset))
 
-        yield from self.set_tool_z_offset(current_tool, z_offset)
-        # yield RcatcCanon.queuebuster()
+        #yield from self.set_tool_z_offset(current_tool, z_offset)
+        yield from self.g10_l20(versa_probeheight - versa_blockheight)
+
+        # go back up
+        Canon.rapid_safe(Position(z=versa_z))
+
+        # G10 L20 Px Zx
+        # z = versa_probeheight - versa_blockheight
+        # wcs_pos = self.stat.g5x_offset
+        # z = self.runtime.current_z + self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] - z
+        # self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] = z
+        # self.runtime.current_z += self.runtime.origin_offset_z
+        # self.runtime.origin_offset_z = z
+        # self.runtime.current_z -= z
+        # emccanon.SET_G5X_OFFSET(self.stat.g5x_index, wcs_pos[0], wcs_pos[1], z, wcs_pos[3], wcs_pos[4], wcs_pos[5], 0, 0, 0)
+        # yield Canon.queuebuster()
+
+    def g10_l20(self, z: float):
+        wcs_pos = self.stat.g5x_offset
+        z = self.runtime.current_z + self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] - z
+        self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] = z
+        self.runtime.current_z += self.runtime.origin_offset_z
+        self.runtime.origin_offset_z = z
+        self.runtime.current_z -= z
+        emccanon.SET_G5X_OFFSET(self.stat.g5x_index, wcs_pos[0], wcs_pos[1], z, wcs_pos[3], wcs_pos[4], wcs_pos[5], 0, 0, 0)
+        yield Canon.queuebuster()
 
     def set_tool_z_offset(self, tool_number: int, z_offset: float):
         self.stat.poll()
