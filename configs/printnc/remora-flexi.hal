@@ -1,4 +1,9 @@
-
+alias pin flexi.output.AUX0 flexi.output.atc_door
+alias pin flexi.output.AUX1 flexi.output.air
+alias pin flexi.output.AUX2 flexi.output.unused1
+alias pin flexi.output.AUX3 flexi.output.unused2
+alias pin flexi.output.COOLANT flexi.output.mql_air
+alias pin flexi.output.MIST flexi.output.mql_pump
 
 # load the realtime components
 
@@ -9,7 +14,7 @@
 	loadrt not names=stepen_not,stepen_z_not
 	loadrt estop_latch names=estop_latch
 	loadrt and2 names=run_and,step_and,probe_and
-	loadrt or2 names=resume_or,pause_or,run_or,air_or,probe_or
+	loadrt or2 names=resume_or,pause_or,run_or,probe_or
 	loadrt toggle names=hold_button_toggle
 	loadrt toggle2nist names=hold_toggle,paused_toggle
 	loadrt conv_s32_float names=motion_conv
@@ -41,7 +46,6 @@
 	addf probe_or servo-thread
 	addf hold_toggle servo-thread
 	addf hold_button_toggle servo-thread
-	addf air_or servo-thread
 #	addf resume_or servo-thread
 #	addf pause_or servo-thread
 #	addf run_or servo-thread
@@ -142,9 +146,8 @@
 	net j2enable => flexi.output.STEP_EN_Z
 
 # Air and mist outputs
-    net air_mql flexi.output.MIST air_or.in0 <= iocontrol.0.coolant-mist
-    net air_blow air_or.in1 <= iocontrol.0.coolant-flood
-	net air flexi.output.COOLANT <= air_or.out
+    net mist flexi.output.mql_pump flexi.output.mql_air <= iocontrol.0.coolant-mist
+	net air flexi.output.air <= iocontrol.0.coolant-flood
 
 # User buttons
 	#Halt is shared with motor alarms and is up in the estop loop.

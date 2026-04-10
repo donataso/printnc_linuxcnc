@@ -1,23 +1,23 @@
 {
   "safe_z": 0,
-  "engage_z": -120.0,
+  "engage_z": -106.0,
 
   "align_axis": "X",
-  "num_pockets": 2,
+  "num_pockets": 6,
   "pocket_offset": 45,
-  "first_pocket_x": 533.03,
-  "first_pocket_y": 456.02,
+  "first_pocket_x": 382.81,
+  "first_pocket_y": 456.657,
 
   "manual_change_pos_x": 315,
   "manual_change_pos_y": 0,
 
   "pickup_plunge_count": 2,
   "pickup_z_retreat": 25,
-  "pickup_spindle_speed": 1400,
-  "pickup_rate": 1800,
+  "pickup_spindle_speed": 1200,
+  "pickup_rate": 3500,
 
   "drop_spindle_speed": 1200,
-  "drop_rate": 1500,
+  "drop_rate": 3500,
 
   "spindle_at_speed_digital_in": 0,
   "spindle_start_time": 1,

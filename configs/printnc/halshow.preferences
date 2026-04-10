@@ -23,6 +23,10 @@ set ::watchlist {
     pin+flexi.output.MIST
     pin+flexi.input.FEED_HOLD
     pin+flexi.input.FEED_HOLD.not
+    pin+flexi.output.AUX3
+    pin+flexi.output.AUX2
+    pin+flexi.output.AUX1
+    pin+flexi.output.AUX0
 }
 set ::workmode watchhal
 set ::watchInterval 100

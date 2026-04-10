@@ -7,6 +7,7 @@ CalculatorDialog-geometry = 910 539 472 376
 _CALCULATOR = 910 539 472 376
 RunFromLineDialog-geometry = 795 443 300 175
 axisToolButtonDialog_ENTRY = 910 539 300 150
+__message = 833 507 321 124
 
 [DIALOG_OPTIONS]
 EntryDialog_play_sound = True
@@ -22,12 +23,14 @@ MachineLogDialog_play_sound = True
 MachineLogDialog_sound_type = READY
 RunFromLineDialog_play_sound = True
 RunFromLineDialog_sound_type = READY
+KeyboardDialog_play_sound = True
+KeyboardDialog_sound_type = READY
 
 [BOOK_KEEPING]
-last_loaded_directory = /home/expatria/Desktop/gcode/atc
-last_loaded_file = /home/expatria/Desktop/gcode/atc/nut_cut.ngc
+last_loaded_directory = /home/expatria/Desktop/gcode/mx
+last_loaded_file = /home/expatria/Desktop/gcode/mx/bottom_all.ngc
 style_QSS_Path = DEFAULT
-RecentPath_0 = /home/expatria/Desktop/gcode/atc/nut_cut.ngc
+RecentPath_0 = /home/expatria/Desktop/gcode/mx/bottom_all.ngc
 
 [ORIGINOFFSET_SYSTEM_NAMES]
 __dialogOffsetViewWidget-G54 = User System 1
@@ -91,6 +94,15 @@ gcodegraphics-user-panx = 0.0
 gcodegraphics-user-pany = 0.0
 gcodegraphics-user-lat = 0.0
 gcodegraphics-user-lon = 0.0
+gcodegraphics-current-view = p
+adj_maxvel_ovr-hi-value = 75
+adj_maxvel_ovr-low-value = 25
+adj_rapid_ovr-hi-value = 75
+adj_rapid_ovr-low-value = 25
+adj_feed_ovr-hi-value = 75
+adj_feed_ovr-low-value = 25
+adj_spindle_ovr-hi-value = 75
+adj_spindle_ovr-low-value = 25
 
 [CUSTOM_FORM_ENTRIES]
 Tool to load = 0
@@ -100,9 +112,9 @@ Sensor X = 12.0
 Sensor Y = 550.0
 Camera X = 10.0
 Camera Y = 10.0
-Work Height = 112.18
+Work Height = -62.945
 Touch Height = 63.652
-Sensor Height = 63.652
+Sensor Height = -93.49
 Search Velocity = 500.0
 Probe Velocity = 30.0
 Max Probe = 20.0
@@ -115,7 +127,7 @@ Reload tool = True
 Use keyboard = True
 Use tool sensor = True
 Use tool touchplate = False
-Run from line = True
+Run from line = False
 Use virtual keyboard = False
 Use camera = False
 Use alpha display mode = False
@@ -123,6 +135,49 @@ Inhibit display mouse selection = True
 Camview xscale = 100
 Camview yscale = 100
 Camview cam number = 0
+Camview cam api = ANY
+Camview cam resolution = DEFAULT
+chk_inhibit_selection = False
+chk_inhibit_spindle = False
+chk_reload_tool = False
+chk_reload_program = False
+chk_use_keyboard = False
+chk_use_camera = False
+chk_use_mdi_keyboard = False
+chk_run_from_line = False
+chk_use_mpg = False
+chk_use_handler_calculator = False
+chk_override_limits = False
+chk_touchplate = True
+chk_auto_toolsensor = False
+chk_manual_toolsensor = False
+lineEdit_touch_height = 10
+lineEdit_sensor_height = 10
+lineEdit_gauge_height = 10
+lineEdit_search_vel = 10
+lineEdit_probe_vel = 10
+lineEdit_max_probe = 10
+lineEdit_start_height = 10
+lineEdit_retract = 10
+lineEdit_zsafe = 10
+lbl_home_x = 0.0
+lbl_home_y = 630.0
+lineEdit_sensor_x = 10
+lineEdit_sensor_y = 10
+lineEdit_laser_x = 10
+lineEdit_laser_y = 10
+lineEdit_camera_x = 10
+lineEdit_camera_y = 10
+lineEdit_probe_x = 10
+lineEdit_probe_y = 10
+lineEdit_rotary_height = 10
+lineEdit_spindle_raise = 10
+lineEdit_max_power = 10
+lineEdit_max_volts = 10
+lineEdit_max_amps = 10
+lineEdit_min_rpm = 1500
+lineEdit_max_rpm = 24000
+Status Timeout = 10
 
 [VERSA_PROBE_OPTIONS]
 ps_searchvel = 300.0
@@ -134,9 +189,9 @@ ps_probe_latch = 1.0
 ps_probe_diam = 1.95
 ps_xy_clearance = 10.0
 ps_side_edge_length = 15.0
-ps_probe_height = -72.025
-ps_block_height = -77.195
-use_tool_measurement = False
+ps_probe_height = -93.49
+ps_block_height = -62.945
+use_tool_measurement = True
 ps_offs_x = 0.0
 ps_offs_y = 0.0
 ps_offs_z = 0.0
@@ -144,6 +199,7 @@ ps_offs_angle = 0.0
 ps_probe_rapid_vel = 1000.0
 use_auto_zero = True
 use_auto_skew = False
+ps_probe_tool = -1
 
 [RAPID_ATC]
 num_pockets = 2
@@ -165,4 +221,26 @@ spindle_speed_pickup = 1400
 spindle_speed_drop = 1200
 ir_enabled = False
 cover_enabled = False
+
+[CALCULATOR]
+constValuesList = None
+onShowBehavior = None
+
+[HOLE_CIRCLE_OPTIONS]
+lineEdit_tool = 10
+lineEdit_num_holes = 10
+lineEdit_center_x = 10
+lineEdit_center_y = 10
+lineEdit_first = 10
+lineEdit_radius = 10
+lineEdit_safe_z = 10
+lineEdit_depth = 10
+lineEdit_drill_feed = 10
+lineEdit_retract = 10
+lineEdit_peck = 10
+lineEdit_dwell = 10
+lineEdit_spindle = 10
+lineEdit_comment = 10
+
+[CUSTOM_MACROS]
 

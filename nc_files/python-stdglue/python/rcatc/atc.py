@@ -266,14 +266,18 @@ class Rcatc:
         auto_probe = hal.get_value('qtversaprobe.enable')
         log.debug('probe_tool_length, tool=%d, auto_probe=%s' % (current_tool, auto_probe))
 
-        # self.runtime.execute('G49') # cancel tool offset
         if not auto_probe:
             # G43
             emccanon.USE_TOOL_LENGTH_OFFSET(self.runtime.tool_offset) # no measurement, use offset from the tool table
             return
 
+        # G49
+        emccanon.USE_TOOL_LENGTH_OFFSET(EmcPose())
+        self.runtime.tool_offset = EmcPose()
+
         self.stat.poll()
         inifile = linuxcnc.ini(self.stat.ini_filename)
+        tool_z_offset = int(self.stat.tool_table[0].zoffset)
 
         versa_x = inifile.find('VERSA_TOOLSETTER', 'X') or False
         versa_y = inifile.find('VERSA_TOOLSETTER', 'Y') or False
@@ -283,7 +287,14 @@ class Rcatc:
         versa_x = float(versa_x)
         versa_y = float(versa_y)
         versa_z = float(versa_z)
-        versa_maxprobe = 120.0 # float(versa_maxprobe)
+
+        num_pockets = self.config[ConfigNames.NUM_POCKETS]
+        if current_tool <= num_pockets and tool_z_offset != 0:
+            versa_maxprobe = float(versa_maxprobe)
+            probe_start_z = tool_z_offset + versa_maxprobe - 5
+        else:
+            versa_maxprobe = 120
+            probe_start_z = versa_z
 
         versa_searchvel = hal.get_value('qtversaprobe.searchvel')
         versa_probevel = hal.get_value('qtversaprobe.probevel')
@@ -294,7 +305,7 @@ class Rcatc:
         # go to tool setter
         Canon.rapid_safe(Position(x=versa_x, y=versa_y, z=self.config[ConfigNames.SAFE_Z]))
         yield Canon.queuebuster()
-        Canon.rapid_safe(Position(z=versa_z))
+        Canon.feed_z(Position(z=probe_start_z), 1000)
         yield Canon.queuebuster()
 
         try:
@@ -331,24 +342,16 @@ class Rcatc:
         z_offset = self.stat.probed_position[2] - versa_probeheight + versa_blockheight
         log.debug('probed position: %s, z offset: %s' % (self.stat.probed_position, z_offset))
 
-        #yield from self.set_tool_z_offset(current_tool, z_offset)
-        yield from self.g10_l20(versa_probeheight - versa_blockheight)
+        # if current_tool <= num_pockets:
+        yield from self.set_tool_z_offset(current_tool, self.stat.probed_position[2])
+
+        # yield from self.g10_l20(versa_probeheight - versa_blockheight)
 
         # go back up
         Canon.rapid_safe(Position(z=versa_z))
 
-        # G10 L20 Px Zx
-        # z = versa_probeheight - versa_blockheight
-        # wcs_pos = self.stat.g5x_offset
-        # z = self.runtime.current_z + self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] - z
-        # self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] = z
-        # self.runtime.current_z += self.runtime.origin_offset_z
-        # self.runtime.origin_offset_z = z
-        # self.runtime.current_z -= z
-        # emccanon.SET_G5X_OFFSET(self.stat.g5x_index, wcs_pos[0], wcs_pos[1], z, wcs_pos[3], wcs_pos[4], wcs_pos[5], 0, 0, 0)
-        # yield Canon.queuebuster()
-
     def g10_l20(self, z: float):
+        # G10 L20 Px Zx
         wcs_pos = self.stat.g5x_offset
         z = self.runtime.current_z + self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] - z
         self.runtime.parameters[5203 + (self.stat.g5x_index * 20)] = z
